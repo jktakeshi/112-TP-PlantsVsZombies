@@ -39,32 +39,27 @@ class Zombie:
         return False
 
     def drawZombie(self):
-        drawRect(self.x, self.y, 10, 10, fill = 'red')
+        drawImage(self.image, self.x, self.y, align='center', width = 50, height = 50)
 
 class regularZombie(Zombie):
     def __init__(self, x,  y):
         super().__init__(x, y, health = 100, speed = 0.4, damage = 10)
+        self.image = 'regularZombie.png'
 
-    def draw(self):
-        pass
 
 class flagZombie(Zombie):
     def __init__(self, x,  y):
         super().__init__(x, y, health = 100, speed = 0.6, damage = 10)
+        self.image = 'flagZombie.png'
 
-    def draw(self):
-        pass
 
-class coneheadZombie(Zombie):
+class coneHeadZombie(Zombie):
     def __init__(self, x,  y):
         super().__init__(x, y, health = 175, speed = 0.4, damage = 10)
+        self.image = 'coneHeadZombie.png'
 
-    def draw(self):
-        pass
 
 class bucketHeadZombie(Zombie):
     def __init__(self, x,  y):
         super().__init__(x, y, health = 350, speed = 0.4, damage = 10)
-    
-    def draw(self):
-        pass
+        self.image = 'bucketHeadZombie.png'

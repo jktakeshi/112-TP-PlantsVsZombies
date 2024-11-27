@@ -3,6 +3,11 @@ from projectile import peaShot, icePeaShot
 from PIL import Image
 from time import *
 import random
+
+# path = 'peaShooter.png'
+# image = Image.open(path)
+# app.peaShooter = CMUImage(image)
+
 def distance(x1, y1, x2, y2):
     return (((x1-x2)**2) + ((y1-y2)**2))**0.5
 
@@ -17,14 +22,17 @@ class Plant:
         self.originalY = y
         self.lastShotTime = time()
         self.shootingInterval = shootingInterval
+
+        # path = self.image
+        # image = Image.open(path)
+        # app.Image = CMUImage(image)
     
     def canShoot(self):
         return self.shootingInterval != None and (time()-self.lastShotTime) >= self.shootingInterval
 
     def drawPlant(self):
-        drawImage(self.image, self.x, self.y, align='center', width = 50, height = 50)
+        drawImage(app.Image, self.x, self.y, align='center', width = 50, height = 50)
 
-    
     def damagePlant(self, damage):
         self.health -= damage
     
@@ -41,7 +49,6 @@ class PeaShooter(Plant):
         self.health = 100
         self.image = 'peaShooter.png'
         
-    
     def shoot(self):
         self.lastShotTime = time()
         return peaShot(self.x, self.y)
@@ -58,16 +65,23 @@ class IcePeaShooter(Plant):
 class Sunflower(Plant): #produces sun every 10 seconds
     def __init__(self, x, y):
         super().__init__(x, y, color='yellow')
-        self.prevSunTime = time()
+        self.prevSunTime = None
         self.image = 'sunflower.png'
+        self.sunCount = 0
     
     def createSun(self):
-        if time() - self.prevSunTime <= 10:
+        if self.prevSunTime == None:
             self.prevSunTime = time()
-            return Sun(self.x - 20, self.y + 20, heightLimit = self.y + 10)
+        if time() - self.prevSunTime >= 10:
+            self.prevSunTime = None
+            if self.sunCount % 2 == 0:
+                return Sun(self.x - 30, self.y + 30, heightLimit = self.y + 10)
+            else: 
+                return Sun(self.x + 30, self.y + 30, heightLimit = self.y + 10)
+        self.sunCount += 1
 
 class Sun(Plant):
-    def __init__(self, x, y, heightLimit=None, speed=0.5,lifeTime=10):
+    def __init__(self, x, y, heightLimit=None, speed=0.5,lifeTime=15):
         self.x = x
         self.y = y
         self.speed = speed
@@ -76,7 +90,7 @@ class Sun(Plant):
         self.startLifeTime = None
         self.collected = False
         self.heightLimit = heightLimit
-        self.image = 'sun.png'
+        self.image = 'newSun.png'
     
     def move(self):
         if self.heightLimit == None:

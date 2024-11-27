@@ -9,6 +9,7 @@ def distance(x1, y1, x2, y2):
     return (((x1-x2)**2) + ((y1-y2)**2))**0.5
 
 def onAppStart(app):
+    app.frontYard = 'frontyard.png'
     app.plantsPanelList = []
     app.plantsGridList = []
     app.plantsLocation = []
@@ -19,10 +20,15 @@ def onAppStart(app):
 
     app.rows, app.cols = 5, 9
     app.cellSize = 30
-    app.boardLeft = 150
-    app.boardTop = 150
-    app.boardWidth = 800
-    app.boardHeight = 600
+    app.boardLeft = 240
+    app.boardTop = 75
+    app.boardWidth = 700
+    app.boardHeight = 475
+
+    app.plantPanelX = 230
+    app.plantPanelY = 2
+    app.plantPanelWidth = 400
+    app.plantPanelHeight = 70
 
     app.sunList = []
     app.sunPoints = 0
@@ -35,13 +41,13 @@ def onAppStart(app):
 # there will be changes for different levels
 #   first level will just have sunflower, peashooter, icepea
 def plantPanel(app):
-    app.plantsPanelList.append(Sunflower(100, 105))  # Sunflower
-    app.plantsPanelList.append(PeaShooter(150, 105))  # PeaShooter
-    app.plantsPanelList.append(IcePeaShooter(200, 105)) #icePeaShooter
+    app.plantsPanelList.append(Sunflower(app.plantPanelX + 45, app.plantPanelY + app.plantPanelHeight/2))  # Sunflower
+    app.plantsPanelList.append(PeaShooter(app.plantPanelX + 75, app.plantPanelY + app.plantPanelHeight/2))  # PeaShooter
+    app.plantsPanelList.append(IcePeaShooter(app.plantPanelX + 115, app.plantPanelY + app.plantPanelHeight/2)) #icePeaShooter
 
 # plant panel outline
 def drawPlantPanel(app):
-    drawRect(75, 75, 400, 70, fill=None, border  = 'black')
+    drawRect(app.plantPanelX, app.plantPanelY, app.plantPanelWidth, app.plantPanelHeight, fill=None, border  = 'black')
     for plant in app.plantsPanelList:
         plant.drawPlant()
     
@@ -51,7 +57,6 @@ def onMousePress(app, mouseX, mouseY):
             app.selectedPlant = copy.deepcopy(plant)
             break
 
-        
     # sun collection
     for sun in copy.copy(app.sunList):
         if sun.isCollected(mouseX, mouseY):
@@ -93,7 +98,7 @@ def onStep(app):
         cellWidth, cellHeight = getCellSize(app)
         zombieX = app.boardLeft + app.boardWidth + 10
         zombieY = app.boardTop + row * cellHeight + cellHeight//2
-        newZombie = Zombie(zombieX, zombieY, 100, 0.5, 10) # edit to accom for diff zombies
+        newZombie = regularZombie(zombieX, zombieY) # edit to accom for diff zombies
         app.zombiesList.append(newZombie)
 
     #plant shooting projectile
@@ -153,13 +158,13 @@ def onStep(app):
 def drawGrid(app):
     for row in range(app.rows):
         for col in range(app.cols):
-            color = 'lightgreen' if (row+col) % 2 == 0 else 'green' #lightgreen and green
+            color = None if (row+col) % 2 == 0 else None #lightgreen and green
             drawCell(app, row, col, color)
 
 def drawCell(app, row, col, color):
     cellLeft, cellTop = getCellLeftTop(app, row, col)
     cellWidth, cellHeight = getCellSize(app)
-    drawRect(cellLeft, cellTop, cellWidth, cellHeight, fill = color)
+    drawRect(cellLeft, cellTop, cellWidth, cellHeight, fill = color, border='black')
 
 def getCellLeftTop(app, row, col):
     cellWidth, cellHeight = getCellSize(app)
@@ -185,6 +190,7 @@ def getCell(app, x, y):
     
 
 def redrawAll(app):
+    drawImage(app.frontYard, 0, 0, width=app.width, height=app.height)
     drawGrid(app)
     drawPlantPanel(app)
     if app.selectedPlant:
@@ -205,6 +211,6 @@ def redrawAll(app):
     drawLabel(f'Sun Points: {app.sunPoints}', 75, 50)
 
 def main():
-    runApp(width = 1000, height = 1000)
+    runApp(width = 978, height = 575)
 
 main()
