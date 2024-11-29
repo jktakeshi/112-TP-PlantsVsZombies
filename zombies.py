@@ -39,27 +39,40 @@ class Zombie:
         return False
 
     def drawZombie(self):
-        drawImage(self.image, self.x, self.y, align='center', width = 50, height = 50)
+        drawImage(self.image, self.x, self.y, align='center', width = 60, height = 70)
 
 class regularZombie(Zombie):
     def __init__(self, x,  y):
         super().__init__(x, y, health = 100, speed = 0.4, damage = 10)
-        self.image = 'regularZombie.png'
+        # self.image = 'regularZombie.png'
+        self.imagePath = 'regularZombie.png'
+        image = Image.open(self.imagePath)
+        self.image = CMUImage(image)
 
 
 class flagZombie(Zombie):
     def __init__(self, x,  y):
         super().__init__(x, y, health = 100, speed = 0.6, damage = 10)
-        self.image = 'flagZombie.png'
+        # self.image = 'flagZombie.png'
+        self.imagePath = 'flagZombie.png'
+        image = Image.open(self.imagePath)
+        self.image = CMUImage(image)
+
 
 
 class coneHeadZombie(Zombie):
     def __init__(self, x,  y):
         super().__init__(x, y, health = 175, speed = 0.4, damage = 10)
-        self.image = 'coneHeadZombie.png'
+        # self.image = 'coneHeadZombie.png'
+        self.imagePath = 'coneHeadZombie.png'
+        image = Image.open(self.imagePath)
+        self.image = CMUImage(image)
 
 
 class bucketHeadZombie(Zombie):
     def __init__(self, x,  y):
         super().__init__(x, y, health = 350, speed = 0.4, damage = 10)
-        self.image = 'bucketHeadZombie.png'
+        # self.image = 'bucketHeadZombie.png'
+        self.imagePath = 'bucketHeadZombie.png'
+        image = Image.open(self.imagePath)
+        self.image = CMUImage(image)

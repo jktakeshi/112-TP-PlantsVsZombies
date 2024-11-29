@@ -31,19 +31,28 @@ class Projectile:
 class peaShot(Projectile):
     def __init__(self, x, y,):
         super().__init__(x, y, speed = 10, damage = 10)
-        self.image = 'pea.png'
+        # self.image = 'pea.png'
+        self.imagePath = 'pea.png'
+        image = Image.open(self.imagePath)
+        self.image = CMUImage(image)
         self.width = 10
         self.height = 10
 
 class icePeaShot(Projectile):
     def __init__(self, x, y,):
         super().__init__(x, y, speed = 8, damage = 10)
-        self.freezeEffect = 2
-        self.image = 'snowpea.png'
+        self.imagePath = 'snowpea.png'
+        image = Image.open(self.imagePath)
+        self.image = CMUImage(image)
         self.width = 10
         self.height = 10
+        self.slowDownDuration = 4 * 30 # 4 seconds
 
 # add duration here
     def slowDownEffect(self, zombie):
-        zombie.applySlowDown(self.slowDown)
+        while self.slowDownDuration > 0:
+            zombie.applySlowDown(self.slowDown)
+            self.slowDownDuration -= 1
+        zombie.slowDown = False
+        zombie.speed /= self.slowDown
     

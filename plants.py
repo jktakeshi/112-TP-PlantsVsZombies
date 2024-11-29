@@ -15,7 +15,6 @@ class Plant:
     def __init__(self, x, y, color, shootingInterval=None):
         self.x = x
         self.y = y
-        self.radius = 20
         self.color = color
         self.health = 100
         self.originalX = x
@@ -23,15 +22,18 @@ class Plant:
         self.lastShotTime = time()
         self.shootingInterval = shootingInterval
 
-        # path = self.image
+        # path = self.imagePath
         # image = Image.open(path)
-        # app.Image = CMUImage(image)
+        # self.Image = CMUImage(image)
     
     def canShoot(self):
         return self.shootingInterval != None and (time()-self.lastShotTime) >= self.shootingInterval
 
+    def drawPlantSeed(self):
+        drawImage(self.seedImage, self.x, self.y, align='center', width = 45, height = 50)
+
     def drawPlant(self):
-        drawImage(app.Image, self.x, self.y, align='center', width = 50, height = 50)
+        drawImage(self.image, self.x, self.y, align='center', width = 45, height = 50)
 
     def damagePlant(self, damage):
         self.health -= damage
@@ -41,13 +43,23 @@ class Plant:
         self.y = self.originalY
     
     def copyPlant(self):
-        return Plant(self.x, self.y, self.color)
+        return self.__class__(self.originalX, self.originalY)
+        
 
 class PeaShooter(Plant):
     def __init__(self, x, y):
         super().__init__(x, y, color='lightgreen', shootingInterval=1.425)
         self.health = 100
-        self.image = 'peaShooter.png'
+        self.imagePath = 'peaShooter.png'
+        image = Image.open(self.imagePath)
+        self.image = CMUImage(image)
+
+        self.seedImagePath = 'peaShooterSeed.png'
+        seedImage = Image.open(self.seedImagePath)
+        self.seedImage = CMUImage(seedImage)
+
+        self.sunCost = 100
+    
         
     def shoot(self):
         self.lastShotTime = time()
@@ -57,7 +69,16 @@ class IcePeaShooter(Plant):
     def __init__(self, x, y):
         super().__init__(x, y, color='blue', shootingInterval=2.25)
         self.health = 75
-        self.image = 'snowpeaShooter.png'
+        self.imagePath = 'snowpeaShooter.png'
+        image = Image.open(self.imagePath)
+        self.image = CMUImage(image)
+
+        self.seedImagePath = 'snowPeaSeed.png'
+        seedImage = Image.open(self.seedImagePath)
+        self.seedImage = CMUImage(seedImage)
+
+        self.sunCost = 175
+    
     def shoot(self):
         self.lastShotTime = time()
         return icePeaShot(self.x, self.y)
@@ -66,8 +87,17 @@ class Sunflower(Plant): #produces sun every 10 seconds
     def __init__(self, x, y):
         super().__init__(x, y, color='yellow')
         self.prevSunTime = None
-        self.image = 'sunflower.png'
+        self.imagePath = 'sunflower.png'
         self.sunCount = 0
+        image = Image.open(self.imagePath)
+        self.image = CMUImage(image)
+
+        self.seedImagePath = 'sunflowerSeed.png'
+        seedImage = Image.open(self.seedImagePath)
+        self.seedImage = CMUImage(seedImage)
+
+        self.sunCost = 50
+    
     
     def createSun(self):
         if self.prevSunTime == None:
@@ -80,17 +110,25 @@ class Sunflower(Plant): #produces sun every 10 seconds
                 return Sun(self.x + 30, self.y + 30, heightLimit = self.y + 10)
         self.sunCount += 1
 
+
+# app.boardLeft = 240
+#     app.boardTop = 75
+#     app.boardWidth = 700 
+#     app.boardHeight = 475
 class Sun(Plant):
     def __init__(self, x, y, heightLimit=None, speed=0.5,lifeTime=15):
         self.x = x
         self.y = y
         self.speed = speed
-        self.yDropLimit = random.randint(100, 700)
+        self.yDropLimit = random.randint(100, 475)
         self.lifeTime = lifeTime
         self.startLifeTime = None
         self.collected = False
         self.heightLimit = heightLimit
-        self.image = 'newSun.png'
+        self.imagePath = 'newSun.png'
+
+        image = Image.open(self.imagePath)
+        self.image = CMUImage(image)
     
     def move(self):
         if self.heightLimit == None:
