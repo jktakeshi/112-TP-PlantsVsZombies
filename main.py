@@ -50,10 +50,23 @@ def onAppStart(app):
 
     app.currentLevel = 'easy'
     app.counter = 0
+    app.finalWave = False
+    app.zombiesSpawned = 0
+    app.finalWaveSpawned = 0
 
-    app.gameOver = False
+    app.gameOverLose = False
+    app.gameOverWin = False
     app.paused = False
     plantPanel(app)
+
+    app.finalWaveStartTimer = None
+    # final wave label
+    app.finalWaveLabel = False
+    app.drawFinalLabel = False
+    app.finalLabelTimer = 0
+    app.finalLabelDuration = 3
+    app.finalLabelFadeTime = 2
+    app.finalLabelOpacity = 0
 
 
 # adding "plants" to the plant panel
@@ -96,9 +109,10 @@ def onMousePress(app, mouseX, mouseY):
         levelsToGame(app, mouseX, mouseY)
 
     for plant in app.plantsPanelList:
-        if distance(mouseX, mouseY, plant.x, plant.y) <= 10:
+        if distance(mouseX, mouseY, plant.x, plant.y) <= 25:
             if plant.sunCost <= app.sunPoints:
                 app.selectedPlant = plant.copyPlant()
+                app.selectedPlant.x, app.selectedPlant.y = mouseX, mouseY
             break
 
     # sun collection
@@ -134,18 +148,11 @@ def onMouseRelease(app, mouseX, mouseY):
             # resets selected plant to the panel if it is not dropped on a valid cell on the grid
             app.selectedPlant.resetPosition()
             app.selectedPlant = None
-    
+
 def onStep(app):
-    if not app.gameOver and not app.paused:
+    if not app.gameOverLose and not app.gameOverWin and not app.paused:
         app.counter += 1
-        # generating zombies on random
-        if random.random() < 0.005: #change this logic for the different levels
-            row = random.choice(range(app.rows))
-            cellWidth, cellHeight = getCellSize(app)
-            zombieX = app.boardLeft + app.boardWidth + 10
-            zombieY = app.boardTop + row * cellHeight + cellHeight//2
-            newZombie = regularZombie(zombieX, zombieY) # edit to accom for diff zombies
-            app.zombiesList.append(newZombie)
+        spawnZombies(app, app.currentLevel)
 
         #plant shooting projectile
         for plant in app.plantsGridList:
@@ -172,6 +179,7 @@ def onStep(app):
                 if projectile.checkCollision(zombie):
                     if isinstance(projectile, icePeaShot):
                         projectile.slowDownEffect(zombie)
+                        print(zombie.slowDownEnd)
                     projectile.damageZombie(zombie, projectile.damage)
                     projectile.inMotion = False
                     if zombie.health <= 0:
@@ -190,7 +198,6 @@ def onStep(app):
                 sun = plant.createSun()
                 if sun:
                     app.sunList.append(sun)
-                    # print('hi')
         
         # moving and removing sun
         for sun in copy.copy(app.sunList): # edit this; prolly use copy
@@ -198,16 +205,35 @@ def onStep(app):
             if sun.isExpired():
                 app.sunList.remove(sun)
 
-        # game over condition
-        if not app.gameOver:
+        if not app.gameOverLose and not app.gameOverWin:
             for zombie in app.zombiesList:
                 if zombie.x <= app.boardLeft - 40:
-                    app.gameOver = True
+                    app.gameOverLose = True
+        # animating final wave label
+        
+        if app.drawFinalLabel:
+            elapsedTime = (app.counter-app.finalLabelTimer)/app.stepsPerSecond
+            if elapsedTime < app.finalLabelFadeTime: #fading in
+                app.finalLabelOpacity = elapsedTime/app.finalLabelFadeTime
+            elif elapsedTime < app.finalLabelDuration + app.finalLabelFadeTime:
+                app.finalLabelOpacity = 100
+            elif elapsedTime < app.finalLabelDuration + (2*app.finalLabelFadeTime): #fading out
+                remaining = (app.finalLabelDuration + (2*app.finalLabelFadeTime)) - elapsedTime
+                app.finalLabelOpacity = remaining/app.finalLabelFadeTime
+            else: app.finalLabel = False
 
 def drawGameOver(app):
-    if app.gameOver:
-        drawLabel("Game Over", app.width//2, app.height//2, bold=True, size=50)
-        drawLabel("The Zombies Ate Your Brains!", app.width//2, app.height//2 + 50, fill='red', bold=True, size=50)
+    path = 'gameOver.png'
+    image = Image.open(path)
+    gameOverLoseSign = CMUImage(image)
+    if app.gameOverLose:
+        drawRect(0, 0, app.width, app.height, opacity=60)
+        drawImage(gameOverLoseSign, app.width//2, app.height//2, align='center')
+        # drawLabel("Game Over", app.width//2, app.height//2, bold=True, size=50, font='serif')
+        # drawLabel("The Zombies Ate Your Brains!", app.width//2, app.height//2 + 50, fill='red', bold=True, size=50, font='serif')
+    elif app.gameOverWin:
+        drawLabel("Game Over", app.width//2, app.height//2, bold=True, size=50, font='serif')
+        drawLabel("You won!", app.width//2, app.height//2 + 50, fill='red', bold=True, size=50, font='serif')
 
 #Grid
 def drawGrid(app):
@@ -247,12 +273,11 @@ def getCell(app, x, y):
 def redrawAll(app):
     if app.gameState == 'titleScreen':
         drawTitleScreen(app)
-        # print('title')
+
     elif app.gameState == 'levels': #change this
         drawLevelSelector(app)
-        # print('levels')
+
     elif app.gameState == 'gameplay':
-        # plantPanel(app)
         drawImage(app.frontYard, 0, 0, width=app.width, height=app.height)
         drawImage(app.seedSlot, 230, 2, width=app.plantPanelWidth, height=app.plantPanelHeight)
         drawLabel(f'{app.sunPoints}', 270, 60, bold = True)
@@ -273,6 +298,10 @@ def redrawAll(app):
 
         for sun in app.sunList:
             sun.drawPlant()
+        
+        if app.finalWaveLabel:
+            drawLabel("Final Wave!", app.width//2, app.height//2, size = 50,
+                      bold = True, opacity=app.finalLabelOpacity, align='center', fill='red', font='serif')
 
 
 def main():

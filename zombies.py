@@ -52,7 +52,7 @@ class regularZombie(Zombie):
 
 class flagZombie(Zombie):
     def __init__(self, x,  y):
-        super().__init__(x, y, health = 100, speed = 0.6, damage = 10)
+        super().__init__(x, y, health = 100, speed = 0.5, damage = 10)
         # self.image = 'flagZombie.png'
         self.imagePath = 'flagZombie.png'
         image = Image.open(self.imagePath)

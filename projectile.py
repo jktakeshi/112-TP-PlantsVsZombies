@@ -1,5 +1,5 @@
 from zombies import *
-
+from time import *
 
 class Projectile:
     def __init__(self, x, y, speed, damage):
@@ -35,8 +35,8 @@ class peaShot(Projectile):
         self.imagePath = 'pea.png'
         image = Image.open(self.imagePath)
         self.image = CMUImage(image)
-        self.width = 10
-        self.height = 10
+        self.width = 15
+        self.height = 15
 
 class icePeaShot(Projectile):
     def __init__(self, x, y,):
@@ -44,15 +44,18 @@ class icePeaShot(Projectile):
         self.imagePath = 'snowpea.png'
         image = Image.open(self.imagePath)
         self.image = CMUImage(image)
-        self.width = 10
-        self.height = 10
+        self.width = 15
+        self.height = 15
         self.slowDownDuration = 4 * 30 # 4 seconds
 
 # add duration here
     def slowDownEffect(self, zombie):
-        while self.slowDownDuration > 0:
-            zombie.applySlowDown(self.slowDown)
-            self.slowDownDuration -= 1
-        zombie.slowDown = False
-        zombie.speed /= self.slowDown
+        zombie.applySlowDown(self.slowDown)
+        print(zombie.speed)
+        zombie.slowDownEnd = time() + self.slowDownDuration
+        # while self.slowDownDuration > 0:
+        #     zombie.applySlowDown(self.slowDown)
+        #     self.slowDownDuration -= 1
+        # zombie.slowDown = False
+        # zombie.speed /= self.slowDown
     

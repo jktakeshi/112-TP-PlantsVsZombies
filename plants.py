@@ -125,7 +125,7 @@ class Sun(Plant):
         self.startLifeTime = None
         self.collected = False
         self.heightLimit = heightLimit
-        self.imagePath = 'newSun.png'
+        self.imagePath = 'sun.png'
 
         image = Image.open(self.imagePath)
         self.image = CMUImage(image)
