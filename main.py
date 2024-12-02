@@ -2,7 +2,11 @@ from cmu_graphics import *
 from plants import *
 from zombies import *
 from levels import *
+from preGame import *
 from titleScreen import *
+from parabolicMotion import *
+from projectile import *
+from PIL import Image
 import math
 import random
 import copy
@@ -12,16 +16,25 @@ def distance(x1, y1, x2, y2):
 
 def onAppStart(app):
     app.gameState = 'titleScreen'
+    app.shovel = None
+    app.shovelSelected = False
 
     # frontyard
+    # citation: https://pvz-rp.fandom.com/wiki/Player%27s_House
     path = 'frontyard.png'
     image = Image.open(path)
     app.frontYard = CMUImage(image)
 
     # seed slot
+    # citation: https://plantsvszombies.fandom.com/wiki/Seed_slot
     path = 'emptySeedSlot.png'
     image = Image.open(path)
     app.seedSlot = CMUImage(image)
+
+    # citation: https://plantsvszombies.fandom.com/wiki/Shovel
+    path = 'shovel.png'
+    image = Image.open(path)
+    app.shovelIcon = CMUImage(image)
 
     # plant panel
     app.plantsPanelList = []
@@ -34,6 +47,9 @@ def onAppStart(app):
     app.plantsGridList = []
     app.plantsLocation = []
     app.selectedPlant = None
+    app.selectedPlantSeed = None
+    app.current = None
+ 
 
     app.zombiesList = []
     app.projectileList = []
@@ -56,7 +72,7 @@ def onAppStart(app):
 
     app.gameOverLose = False
     app.gameOverWin = False
-    app.paused = False
+    app.paused = True
     plantPanel(app)
 
     app.finalWaveStartTimer = None
@@ -67,33 +83,6 @@ def onAppStart(app):
     app.finalLabelDuration = 3
     app.finalLabelFadeTime = 2
     app.finalLabelOpacity = 0
-
-
-# adding "plants" to the plant panel
-# there will be changes for different levels
-#   first level will just have sunflower, peashooter, icepea
-
-
-# def plantPanel(app):
-#     # add plants from plants.py
-#     # app.plantsPanelList.append(Sunflower(app.plantPanelX + 104, app.plantPanelY + app.plantPanelHeight/2))  # Sunflower
-#     # app.plantsPanelList.append(PeaShooter(app.plantPanelX + 200, app.plantPanelY + app.plantPanelHeight/2))  # PeaShooter
-#     # app.plantsPanelList.append(IcePeaShooter(app.plantPanelX + 250, app.plantPanelY + app.plantPanelHeight/2)) #icePeaShooter
-
-#     startX = app.plantPanelX + 104
-#     y = app.plantPanelY + app.plantPanelHeight/2
-#     spacing = 50
-#     plantTypes = Levels[app.currentLevel]['plants']
-
-#     for plant in plantTypes:
-#         app.plantsPanelList.append(plant(startX, y))
-#         print(app.plantsPanelList)
-    
-#     index = 0
-#     for plant in app.plantsPanelList:
-#         plant.x = plant.x + spacing * index
-#         index += 1
-
 
 # plant panel outline
 def drawPlantPanel(app):
@@ -110,8 +99,9 @@ def onMousePress(app, mouseX, mouseY):
 
     for plant in app.plantsPanelList:
         if distance(mouseX, mouseY, plant.x, plant.y) <= 25:
-            if plant.sunCost <= app.sunPoints:
+            if plant.sunCost <= app.sunPoints and plant.coolingDown == False:
                 app.selectedPlant = plant.copyPlant()
+                app.currentPlant = plant
                 app.selectedPlant.x, app.selectedPlant.y = mouseX, mouseY
             break
 
@@ -121,10 +111,17 @@ def onMousePress(app, mouseX, mouseY):
             app.sunList.remove(sun)
             app.sunPoints += 25
             return
+    
+    if distance(mouseX, mouseY, 715, 37) <= 25:
+        app.shovel = Shovel(715,37)
+        app.shovelSelected = True
+
 
 def onMouseDrag(app, mouseX, mouseY):
     if app.selectedPlant:
         app.selectedPlant.x, app.selectedPlant.y = mouseX, mouseY
+    if app.shovelSelected:
+        app.shovel.x, app.shovel.y = mouseX, mouseY
 
 def onMouseRelease(app, mouseX, mouseY):
     if app.selectedPlant:
@@ -140,6 +137,8 @@ def onMouseRelease(app, mouseX, mouseY):
                 app.plantsLocation.append((app.selectedPlant.x, app.selectedPlant.y))
                 app.sunPoints -= app.selectedPlant.sunCost
                 app.selectedPlant = None
+                app.currentPlant.isCoolingDown()
+
             else: # resets selected plant to the panel if placed on a cell where there is
                   # already a plant
                 app.selectedPlant.resetPosition() 
@@ -148,6 +147,23 @@ def onMouseRelease(app, mouseX, mouseY):
             # resets selected plant to the panel if it is not dropped on a valid cell on the grid
             app.selectedPlant.resetPosition()
             app.selectedPlant = None
+    if app.shovelSelected:
+        cell = getCell(app, mouseX, mouseY)
+        if cell:
+            row, col  = cell
+            cellLeft, cellTop = getCellLeftTop(app, row, col)
+            cellWidth, cellHeight = getCellSize(app)
+            selectedX = cellLeft + cellWidth // 2
+            selectedY = cellTop + cellHeight // 2
+            if (selectedX, selectedY) in app.plantsLocation:
+                index = app.plantsLocation.index((selectedX, selectedY))
+                app.sunPoints += app.plantsGridList[index].sunCost
+                app.plantsGridList.pop(index)
+                app.plantsLocation.pop(index)
+                
+        app.shovel.resetPosition()
+        app.shovelSelected = False
+
 
 def onStep(app):
     if not app.gameOverLose and not app.gameOverWin and not app.paused:
@@ -158,7 +174,15 @@ def onStep(app):
         for plant in app.plantsGridList:
             zombiesInRow = [zombie for zombie in app.zombiesList if abs(zombie.y - plant.y) < 10]
             if zombiesInRow and plant.canShoot():
-                projectile = plant.shoot()
+                predictedX, predictedY = predictContact(plant.x,plant.y, zombiesInRow[0], travelTime = 2.0,steps=50)
+                # predictContact(startX, startY, zombie, steps, gravity = -9.81)
+                # print(f'predictedX: {predictedX}, zombieX: {zombiesInRow[0].x}, predictedY:{zombiesInRow[0].y}, zombieY{predictedY}')
+                # print('---')
+                if isinstance(plant, melon):
+                    projectile = plant.shoot(predictedX, predictedY)
+                    print('hi')
+                else:
+                    projectile = plant.shoot()
                 app.projectileList.append(projectile)
 
         # move zombie and check for collision with plant
@@ -166,8 +190,7 @@ def onStep(app):
             zombie.moveZombie()
             for plant in app.plantsGridList:
                 if zombie.collisionWithPlant(plant):
-                    # do smth with onstep to take care of damageplant
-                    zombie.damagePlant(plant, (zombie.damage)/30)
+                    zombie.damagePlant(plant, (zombie.damage)/app.stepsPerSecond)
                     if plant.health <= 0:
                         app.plantsGridList.remove(plant)
                         zombie.inMotion = True
@@ -179,16 +202,17 @@ def onStep(app):
                 if projectile.checkCollision(zombie):
                     if isinstance(projectile, icePeaShot):
                         projectile.slowDownEffect(zombie)
-                        print(zombie.slowDownEnd)
                     projectile.damageZombie(zombie, projectile.damage)
                     projectile.inMotion = False
-                    if zombie.health <= 0:
+                    if 0 < zombie.health <= zombie.lowHealth:
+                        zombie.heavyDamage()
+                    elif zombie.health <= 0:
                         app.zombiesList.remove(zombie)
                     if projectile in app.projectileList:
                         app.projectileList.remove(projectile)
         
         # generating sun from the top of the screen
-        if app.counter % 300 == 0:
+        if app.counter % (app.stepsPerSecond * 10) == 0:
             sunX = random.randint(app.boardLeft, app.boardLeft + app.boardWidth)
             app.sunList.append(Sun(sunX, 0))
 
@@ -200,7 +224,7 @@ def onStep(app):
                     app.sunList.append(sun)
         
         # moving and removing sun
-        for sun in copy.copy(app.sunList): # edit this; prolly use copy
+        for sun in copy.copy(app.sunList):
             sun.move()
             if sun.isExpired():
                 app.sunList.remove(sun)
@@ -209,8 +233,8 @@ def onStep(app):
             for zombie in app.zombiesList:
                 if zombie.x <= app.boardLeft - 40:
                     app.gameOverLose = True
-        # animating final wave label
         
+        # animating final wave label
         if app.drawFinalLabel:
             elapsedTime = (app.counter-app.finalLabelTimer)/app.stepsPerSecond
             if elapsedTime < app.finalLabelFadeTime: #fading in
@@ -223,23 +247,22 @@ def onStep(app):
             else: app.finalLabel = False
 
 def drawGameOver(app):
+    # citation: https://plantsvszombies.fandom.com/wiki/Brain/Gallery
     path = 'gameOver.png'
     image = Image.open(path)
     gameOverLoseSign = CMUImage(image)
     if app.gameOverLose:
         drawRect(0, 0, app.width, app.height, opacity=60)
         drawImage(gameOverLoseSign, app.width//2, app.height//2, align='center')
-        # drawLabel("Game Over", app.width//2, app.height//2, bold=True, size=50, font='serif')
-        # drawLabel("The Zombies Ate Your Brains!", app.width//2, app.height//2 + 50, fill='red', bold=True, size=50, font='serif')
     elif app.gameOverWin:
         drawLabel("Game Over", app.width//2, app.height//2, bold=True, size=50, font='serif')
         drawLabel("You won!", app.width//2, app.height//2 + 50, fill='red', bold=True, size=50, font='serif')
 
-#Grid
+#Grid (from CS Academy)
 def drawGrid(app):
     for row in range(app.rows):
         for col in range(app.cols):
-            color = None if (row+col) % 2 == 0 else None #lightgreen and green
+            color = None if (row+col) % 2 == 0 else None
             drawCell(app, row, col, color)
 
 def drawCell(app, row, col, color):
@@ -266,27 +289,33 @@ def getCell(app, x, y):
     col = math.floor(dx / cellWidth)
     if (0 <= row < app.rows) and (0 <= col < app.cols):
       return (row, col)
-    else: #this causes error if user doesnt move the plant to the grid
+    else:
       return None
     
-
 def redrawAll(app):
+    # citation: https://rainyday.blog/2015/07/31/first-impressions-plants-vs-zombies/
     if app.gameState == 'titleScreen':
         drawTitleScreen(app)
 
-    elif app.gameState == 'levels': #change this
+    elif app.gameState == 'levels': 
         drawLevelSelector(app)
 
-    elif app.gameState == 'gameplay':
+    elif app.gameState == 'preGame': 
+        drawPregame(app)
+
+    elif app.gameState == 'gameplay' and not app.paused:
         drawImage(app.frontYard, 0, 0, width=app.width, height=app.height)
         drawImage(app.seedSlot, 230, 2, width=app.plantPanelWidth, height=app.plantPanelHeight)
+        drawImage(app.shovelIcon, 715, 37, align='center', width = 45, height = 50)
         drawLabel(f'{app.sunPoints}', 270, 60, bold = True)
         drawGrid(app)
         drawPlantPanel(app)
         drawGameOver(app)
         if app.selectedPlant:
             app.selectedPlant.drawPlant()
-        # draw all the plants and zombies in their respective lists
+        if app.shovel:
+            app.shovel.drawShovel()
+        
         for plant in app.plantsGridList:
             plant.drawPlant()
         
