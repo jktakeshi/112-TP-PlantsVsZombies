@@ -15,10 +15,43 @@ class Projectile:
         self.damage = damage
         self.inMotion = None
         self.slowDown = (2/3)
+
+        self.vx = speed
+        self.vy = 0
     
     def move(self):
-        self.x += self.speed
+        # gravity motion
+        if app.gravity and app.gravityLoc:
+            print('gav here')
+            self.applyGravityEffect(app.gravityLoc)
+            
+        self.x += self.vx
+        self.y += self.vy
         self.inMotion = True
+
+        if (self.x, self.y) == app.gravityLoc:
+            print('here loc')
+            app.reachedGravityCenter = True
+        else: app.reachedGravityCenter = False
+
+
+    def applyGravityEffect(self, gravityLoc):
+        (gx, gy) = gravityLoc
+        distanceToGavityLoc = distance(self.x, self.y, gx, gy)
+        dx = gx - self.x
+        dy = gy - self.y
+
+        if distanceToGavityLoc <= app.gravityRadius:
+
+            # formula
+            a = app.gravityPull/(distanceToGavityLoc**2)
+            ax = a * (dx/distanceToGavityLoc)
+            ay = a * (dy/distanceToGavityLoc)
+            self.vx += ax
+            self.vy += ay
+        else:
+            self.vx = self.speed * (dx/distanceToGavityLoc)
+            self.vy = self.speed * (dy/distanceToGavityLoc)
 
     def checkCollision(self, zombie):
         if abs(self.x - zombie.x) < 5 and abs(self.y - zombie.y) < 30:

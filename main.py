@@ -6,6 +6,7 @@ from preGame import *
 from titleScreen import *
 from parabolicMotion import *
 from projectile import *
+from gravity import *
 from PIL import Image
 import math
 import random
@@ -84,6 +85,15 @@ def onAppStart(app):
     app.finalLabelFadeTime = 2
     app.finalLabelOpacity = 0
 
+    app.gravity = False
+    app.gravityLoc = None
+    app.gravityLocSelect = False
+    app.gravityPull = 5000
+    app.gravityRadius = 300
+    app.gravityStartTime = None
+    app.gravityDuration = 4
+    app.reachedGravityCenter = False
+
 # plant panel outline
 def drawPlantPanel(app):
     drawRect(app.plantPanelX, app.plantPanelY, app.plantPanelWidth, app.plantPanelHeight, fill=None)
@@ -104,6 +114,11 @@ def onMousePress(app, mouseX, mouseY):
                 app.currentPlant = plant
                 app.selectedPlant.x, app.selectedPlant.y = mouseX, mouseY
             break
+    
+    if app.gravityLocSelect:
+        app.gravityLoc = (mouseX, mouseY)
+        app.gravityStartTime = app.counter/app.stepsPerSecond
+        app.gravityLocSelect = False
 
     # sun collection
     for sun in copy.copy(app.sunList):
@@ -164,6 +179,14 @@ def onMouseRelease(app, mouseX, mouseY):
         app.shovel.resetPosition()
         app.shovelSelected = False
 
+def onKeyPress(app, key):
+    if key == "space":
+        app.gameState = 'gameplay'
+        app.paused = False
+        plantPanel(app)
+    elif key == 'g':
+        app.gravity = True
+        app.gravityLocSelect = True
 
 def onStep(app):
     if not app.gameOverLose and not app.gameOverWin and not app.paused:
@@ -175,7 +198,7 @@ def onStep(app):
             zombiesInRow = [zombie for zombie in app.zombiesList if abs(zombie.y - plant.y) < 10]
             if zombiesInRow and plant.canShoot():
                 predictedX, predictedY = predictContact(plant.x, plant.y, zombiesInRow[0], steps = 100, travelTime = 2.0)
-                print(f'predictedX: {predictedX}, zombieX: {zombiesInRow[0].x}')
+                # print(f'predictedX: {predictedX}, zombieX: {zombiesInRow[0].x}')
                 if isinstance(plant, melon):
                     projectile = plant.shoot(predictedX, predictedY)
                 else:
@@ -191,6 +214,11 @@ def onStep(app):
                     if plant.health <= 0:
                         app.plantsGridList.remove(plant)
                         zombie.inMotion = True
+
+        if app.gravity and app.gravityStartTime != None:
+            elapsedTime = app.counter/app.stepsPerSecond - app.gravityStartTime 
+            if elapsedTime >= app.gravityDuration:
+                deactivateGravity(app)        
 
         # move projectile and check for collision
         for projectile in app.projectileList:
@@ -217,6 +245,10 @@ def onStep(app):
                     else:
                         if projectile in app.projectileList:
                             app.projectileList.remove(projectile)
+            if (app.width < projectile.x or projectile.x < 0 or projectile.y > app.height or 
+                projectile.y < 0 or app.reachedGravityCenter == True):
+                app.projectileList.remove(projectile)
+        print(len(app.projectileList))
                 # if isinstance(projectile, melonPult):
                 #     if projectile.y == zombie.y:
                 #         app.projectileList.remove(projectile)
@@ -341,6 +373,14 @@ def redrawAll(app):
         if app.finalWaveLabel:
             drawLabel("Final Wave!", app.width//2, app.height//2, size = 50,
                       bold = True, opacity=app.finalLabelOpacity, align='center', fill='red', font='serif')
+
+        if app.gravity and app.gravityLoc:
+            cx, cy = app.gravityLoc
+            drawCircle(cx, cy, app.gravityRadius, fill = 'gray', opacity=50)
+        
+        if app.gravityLocSelect:
+            drawLabel("Select a spot", app.width//2, app.height//2, size = 40,
+                      bold = True, align='center', font='serif')
 
 
 def main():

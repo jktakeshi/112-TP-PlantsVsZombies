@@ -12,9 +12,3 @@ def drawPregame(app):
     drawLabel(f'{app.sunPoints}', 270, 60, bold = True)
     drawLabel("Press the spacebar to play", app.width/2, app.height/2, bold = True, size=50)
 
-def onKeyPress(self, key):
-    if key == "space":
-        app.gameState = 'gameplay'
-        app.paused = False
-        plantPanel(app)
-
