@@ -29,7 +29,7 @@ class Zombie:
         plant.health -= damage
     
     def collisionWithPlant(self, plant):
-        if abs(self.x - plant.x) < 15 and abs(self.y - plant.y) < 5:
+        if abs(self.x - plant.x) < 35 and abs(self.y - plant.y) < 10:
             self.inMotion = False
             self.moveZombie()
             return True

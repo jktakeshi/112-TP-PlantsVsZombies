@@ -1,5 +1,5 @@
 from cmu_graphics import *
-from projectile import peaShot, icePeaShot, melonPult
+from projectile import peaShot, icePeaShot, melonPult, bounceProjectile
 from PIL import Image
 from time import *
 import random
@@ -208,3 +208,24 @@ class Sun(Plant):
             return (time() - self.startLifeTime) >= self.lifeTime
         else:
             return False
+
+class BouncePlant(Plant):
+    def __init__(self, x, y):
+        super().__init__(x, y, shootingInterval=1.7)
+        self.health = 75
+        # citation: 
+        self.imagePath = 'bouncePlant.png'
+        image = Image.open(self.imagePath)
+        self.image = CMUImage(image)
+
+        # citation: 
+        self.seedImagePath = 'bouncePlantSeed.png'
+        seedImage = Image.open(self.seedImagePath)
+        self.seedImage = CMUImage(seedImage)
+
+        self.sunCost = 1
+        self.coolDownTime = 15
+    
+    def shoot(self):
+        self.lastShotTime = time()
+        return bounceProjectile(self.x, self.y)

@@ -11,7 +11,7 @@ app.levelSelector = CMUImage(image)
 
 Levels = {
     'easy': {
-        'plants': [Sunflower, PeaShooter, IcePeaShooter],
+        'plants': [Sunflower, PeaShooter, Wallnut],
         'zombies': [regularZombie],
         'startZombieSpawn': 10,
         'zombieSpawnRate': 13,
@@ -22,7 +22,7 @@ Levels = {
         'finalWaveDelay': 8
     },
     'medium': {
-        'plants': [Sunflower, PeaShooter, IcePeaShooter],
+        'plants': [Sunflower, PeaShooter, IcePeaShooter, Wallnut, BouncePlant],
         'zombies': [regularZombie, coneHeadZombie],
         'startZombieSpawn': 10,
         'zombieSpawnRate': 10,
@@ -148,7 +148,7 @@ def spawnZombies(app, currLevel):
     # Final wave
     if app.finalWave:
         if app.finalWaveSpawned < gameLevel['finalWaveZombies']:
-            if currTime % spawnRate < 0.8:
+            if currTime % spawnRate < 0.5:
                 if currLevel == 'hard':
                     row = smartZombieRow(app)
                 else:

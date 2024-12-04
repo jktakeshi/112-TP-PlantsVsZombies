@@ -174,13 +174,10 @@ def onStep(app):
         for plant in app.plantsGridList:
             zombiesInRow = [zombie for zombie in app.zombiesList if abs(zombie.y - plant.y) < 10]
             if zombiesInRow and plant.canShoot():
-                predictedX, predictedY = predictContact(plant.x,plant.y, zombiesInRow[0], travelTime = 2.0,steps=50)
-                # predictContact(startX, startY, zombie, steps, gravity = -9.81)
-                # print(f'predictedX: {predictedX}, zombieX: {zombiesInRow[0].x}, predictedY:{zombiesInRow[0].y}, zombieY{predictedY}')
-                # print('---')
+                predictedX, predictedY = predictContact(plant.x, plant.y, zombiesInRow[0], steps = 100, travelTime = 2.0)
+                print(f'predictedX: {predictedX}, zombieX: {zombiesInRow[0].x}')
                 if isinstance(plant, melon):
                     projectile = plant.shoot(predictedX, predictedY)
-                    print('hi')
                 else:
                     projectile = plant.shoot()
                 app.projectileList.append(projectile)
@@ -203,13 +200,26 @@ def onStep(app):
                     if isinstance(projectile, icePeaShot):
                         projectile.slowDownEffect(zombie)
                     projectile.damageZombie(zombie, projectile.damage)
-                    projectile.inMotion = False
+                    if isinstance(projectile, bounceProjectile):
+                        print('bounce')
+                        projectile.bounce(app, zombie, cellHeight = app.boardHeight/app.rows)
+                        if projectile.speed <= 2:
+                            app.projectileList.remove(projectile)
+                    else:
+                        projectile.inMotion = False
                     if 0 < zombie.health <= zombie.lowHealth:
                         zombie.heavyDamage()
                     elif zombie.health <= 0:
                         app.zombiesList.remove(zombie)
-                    if projectile in app.projectileList:
-                        app.projectileList.remove(projectile)
+                    if isinstance(projectile, bounceProjectile) and projectile in app.projectileList:
+                        if not projectile.isBouncing:
+                            app.projectileList.remove(projectile)
+                    else:
+                        if projectile in app.projectileList:
+                            app.projectileList.remove(projectile)
+                # if isinstance(projectile, melonPult):
+                #     if projectile.y == zombie.y:
+                #         app.projectileList.remove(projectile)
         
         # generating sun from the top of the screen
         if app.counter % (app.stepsPerSecond * 10) == 0:
