@@ -20,6 +20,10 @@ def onAppStart(app):
     app.shovel = None
     app.shovelSelected = False
 
+    app.target = TargetIcon(772,37)
+    app.targetSelected = False
+    app.copiedTarget = None
+
     # frontyard
     # citation: https://pvz-rp.fandom.com/wiki/Player%27s_House
     path = 'frontyard.png'
@@ -36,6 +40,16 @@ def onAppStart(app):
     path = 'shovel.png'
     image = Image.open(path)
     app.shovelIcon = CMUImage(image)
+
+    # citation: https://plantsvszombies.fandom.com/wiki/Seed_slot?file=Seed_Slot.png
+    path = 'emptySeedSelector.png'
+    image = Image.open(path)
+    app.emptyTargetIcon = CMUImage(image)
+
+    # citation: https://en.ac-illust.com/clip-art/24289523/target-icon-red
+    path = 'targetIcon.png'
+    image = Image.open(path)
+    app.targetIcon = CMUImage(image)
 
     # plant panel
     app.plantsPanelList = []
@@ -89,10 +103,9 @@ def onAppStart(app):
     app.gravityLoc = None
     app.gravityLocSelect = False
     app.gravityPull = 5000
-    app.gravityRadius = 300
+    app.gravityRadius = 280
     app.gravityStartTime = None
     app.gravityDuration = 4
-    app.reachedGravityCenter = False
 
 # plant panel outline
 def drawPlantPanel(app):
@@ -114,11 +127,6 @@ def onMousePress(app, mouseX, mouseY):
                 app.currentPlant = plant
                 app.selectedPlant.x, app.selectedPlant.y = mouseX, mouseY
             break
-    
-    if app.gravityLocSelect:
-        app.gravityLoc = (mouseX, mouseY)
-        app.gravityStartTime = app.counter/app.stepsPerSecond
-        app.gravityLocSelect = False
 
     # sun collection
     for sun in copy.copy(app.sunList):
@@ -130,13 +138,24 @@ def onMousePress(app, mouseX, mouseY):
     if distance(mouseX, mouseY, 715, 37) <= 25:
         app.shovel = Shovel(715,37)
         app.shovelSelected = True
-
+    
+    if distance(mouseX, mouseY, 772, 37) <= 25:
+        app.copiedTarget = app.target.copyTarget()
+        if app.target.coolingDown == False:
+            app.targetSelected = True
+            app.gravity = True
+            app.gravityLocSelect = True
+            app.gravityLoc = (mouseX, mouseY)
+            app.copiedTarget.x, app.copiedTarget.y = mouseX, mouseY
 
 def onMouseDrag(app, mouseX, mouseY):
     if app.selectedPlant:
         app.selectedPlant.x, app.selectedPlant.y = mouseX, mouseY
     if app.shovelSelected:
         app.shovel.x, app.shovel.y = mouseX, mouseY
+    if app.targetSelected:
+        app.copiedTarget.x, app.copiedTarget.y = mouseX, mouseY
+        app.gravityLoc = (mouseX, mouseY)
 
 def onMouseRelease(app, mouseX, mouseY):
     if app.selectedPlant:
@@ -178,15 +197,27 @@ def onMouseRelease(app, mouseX, mouseY):
                 
         app.shovel.resetPosition()
         app.shovelSelected = False
+    
+    if app.targetSelected:
+        app.gravityLoc = (mouseX, mouseY)
+        app.gravityStartTime = app.counter/app.stepsPerSecond
+        app.gravityLocSelect = False
+        app.copiedTarget.resetPosition()
+        app.copiedTargetSelected = False
+        cell = getCell(app, mouseX, mouseY)
+        
+        if not cell:
+            app.gravity = False
+            app.targetSelected = False
+        else:
+            app.target.isCoolingDown()
+            app.targetSelected = True
 
 def onKeyPress(app, key):
     if key == "space":
         app.gameState = 'gameplay'
         app.paused = False
         plantPanel(app)
-    elif key == 'g':
-        app.gravity = True
-        app.gravityLocSelect = True
 
 def onStep(app):
     if not app.gameOverLose and not app.gameOverWin and not app.paused:
@@ -210,11 +241,12 @@ def onStep(app):
             zombie.moveZombie()
             for plant in app.plantsGridList:
                 if zombie.collisionWithPlant(plant):
-                    zombie.damagePlant(plant, (zombie.damage)/app.stepsPerSecond)
+                    zombie.damagePlant(plant, zombie.damage/app.stepsPerSecond)
                     if plant.health <= 0:
                         app.plantsGridList.remove(plant)
                         zombie.inMotion = True
-
+        
+        # gravity and effect duration
         if app.gravity and app.gravityStartTime != None:
             elapsedTime = app.counter/app.stepsPerSecond - app.gravityStartTime 
             if elapsedTime >= app.gravityDuration:
@@ -223,18 +255,24 @@ def onStep(app):
         # move projectile and check for collision
         for projectile in app.projectileList:
             projectile.move()
+            if app.gravity and app.gravityLoc:
+                projectile.applyGravity(app.gravityLoc)
+                if projectile.reachedGravityCenter:
+                    app.projectileList.remove(projectile)
             for zombie in app.zombiesList:
                 if projectile.checkCollision(zombie):
+                    print('here')
                     if isinstance(projectile, icePeaShot):
                         projectile.slowDownEffect(zombie)
                     projectile.damageZombie(zombie, projectile.damage)
                     if isinstance(projectile, bounceProjectile):
-                        print('bounce')
-                        projectile.bounce(app, zombie, cellHeight = app.boardHeight/app.rows)
-                        if projectile.speed <= 2:
-                            app.projectileList.remove(projectile)
-                    else:
-                        projectile.inMotion = False
+                        if projectile.speed > 0:
+                            projectile.bounce(app, zombie, cellHeight = app.boardHeight/app.rows)
+                            if projectile.speed <= 2:
+                                if projectile in app.projectileList:
+                                    app.projectileList.remove(projectile)
+                    # else:
+                    #     projectile.inMotion = False
                     if 0 < zombie.health <= zombie.lowHealth:
                         zombie.heavyDamage()
                     elif zombie.health <= 0:
@@ -242,13 +280,14 @@ def onStep(app):
                     if isinstance(projectile, bounceProjectile) and projectile in app.projectileList:
                         if not projectile.isBouncing:
                             app.projectileList.remove(projectile)
-                    else:
-                        if projectile in app.projectileList:
-                            app.projectileList.remove(projectile)
-            if (app.width < projectile.x or projectile.x < 0 or projectile.y > app.height or 
-                projectile.y < 0 or app.reachedGravityCenter == True):
-                app.projectileList.remove(projectile)
-        print(len(app.projectileList))
+                
+                else:
+                    if projectile in app.projectileList and not projectile.inMotion:
+                        app.projectileList.remove(projectile)
+            # if (app.width < projectile.x or projectile.x < 0 or projectile.y > app.height or 
+            #     (app.gravity and app.gravityLoc != None and 
+            #      distance(projectile.x, projectile.y, app.gravityLoc[0], app.gravityLoc[1])) < 5):
+            #     app.projectileList.remove(projectile)
                 # if isinstance(projectile, melonPult):
                 #     if projectile.y == zombie.y:
                 #         app.projectileList.remove(projectile)
@@ -357,6 +396,12 @@ def redrawAll(app):
             app.selectedPlant.drawPlant()
         if app.shovel:
             app.shovel.drawShovel()
+        if app.target:
+            app.target.drawTargetSeed()
+        drawImage(app.targetIcon, 772, 37, align='center', width = 45, height = 50)
+        if app.copiedTarget:
+            app.copiedTarget.drawTarget()
+        
         
         for plant in app.plantsGridList:
             plant.drawPlant()
@@ -374,7 +419,7 @@ def redrawAll(app):
             drawLabel("Final Wave!", app.width//2, app.height//2, size = 50,
                       bold = True, opacity=app.finalLabelOpacity, align='center', fill='red', font='serif')
 
-        if app.gravity and app.gravityLoc:
+        if app.gravity and app.gravityLoc and app.target:
             cx, cy = app.gravityLoc
             drawCircle(cx, cy, app.gravityRadius, fill = 'gray', opacity=50)
         

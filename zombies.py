@@ -31,7 +31,7 @@ class Zombie:
     def collisionWithPlant(self, plant):
         if abs(self.x - plant.x) < 35 and abs(self.y - plant.y) < 10:
             self.inMotion = False
-            self.moveZombie()
+            # self.moveZombie()
             return True
         else:
             self.inMotion = True

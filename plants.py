@@ -20,11 +20,11 @@ class Plant:
         self.startCoolDownTime = None
         self.coolingDown = False
         self.seedOpacity = 100
+        
 
     def isCoolingDown(self):
         if self.startCoolDownTime == None:
             self.startCoolDownTime = time()
-        print(self.startCoolDownTime)
         elapsed = time() - self.startCoolDownTime
         if elapsed > self.coolDownTime:
             self.coolingDown = False
@@ -75,7 +75,7 @@ class PeaShooter(Plant):
         seedImage = Image.open(self.seedImagePath)
         self.seedImage = CMUImage(seedImage)
 
-        self.sunCost = 100
+        self.sunCost = 1
     
     def shoot(self):
         self.lastShotTime = time()

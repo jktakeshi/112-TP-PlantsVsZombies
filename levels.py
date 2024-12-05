@@ -34,7 +34,7 @@ Levels = {
         'coneHeadLimit': 5
     },
     'hard': {
-        'plants': [Sunflower, PeaShooter, IcePeaShooter, melon, Wallnut],
+        'plants': [Sunflower, PeaShooter, IcePeaShooter, melon, Wallnut, BouncePlant],
         'zombies': [regularZombie, coneHeadZombie],
         'startZombieSpawn': 10,
         'zombieSpawnRate': 9,
@@ -92,6 +92,58 @@ class Shovel:
     def resetPosition(self):
         self.x = self.originalX
         self.y = self.originalY
+
+class TargetIcon:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.originalX = x
+        self.originalY = y
+        path = 'targetIcon.png'
+        image = Image.open(path)
+        self.image = CMUImage(image)
+        self.coolDownTime = 30
+        self.coolingDown = False
+        self.startCoolDownTime = None
+        self.seedOpacity = 100
+
+        # citation: 
+        self.seedImagePath = 'emptySeedSelector.png'
+        seedImage = Image.open(self.seedImagePath)
+        self.seedImage = CMUImage(seedImage)
+
+    def drawTarget(self):
+        drawImage(self.image, self.x, self.y, align='center', width = 45, height = 50)
+
+    def resetPosition(self):
+        self.x = self.originalX
+        self.y = self.originalY
+
+    def drawTargetSeed(self):
+        drawImage(self.image, self.x, self.y, align='center', width = 45, height = 50)
+        drawImage(self.seedImage, self.originalX, self.originalY, align='center', width = 45, height = 50)
+        if self.coolingDown:
+            elapsed = time() - self.startCoolDownTime
+            self.seedOpacity = max(0, (1 - (elapsed/self.coolDownTime))*100)
+            drawRect(self.x-45/2, self.y-50/2, 45, 50, 
+                     fill='black', opacity=self.seedOpacity)
+            if elapsed >= self.coolDownTime:
+                self.startCoolDownTime = None
+                self.startCoolDownTime = 100
+                self.coolingDown = False
+
+    def isCoolingDown(self):
+        if self.startCoolDownTime == None:
+            self.startCoolDownTime = time()
+        elapsed = time() - self.startCoolDownTime
+        if elapsed > self.coolDownTime:
+            self.coolingDown = False
+            self.startCoolDownTime = None
+        else:
+            self.coolingDown = True
+
+    def copyTarget(self):
+        return self.__class__(self.originalX, self.originalY)
 
 
 def plantPanel(app):
