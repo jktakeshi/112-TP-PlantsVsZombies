@@ -21,31 +21,6 @@ class Projectile:
         self.reachedGravityCenter = False
 
     def move(self):
-        # gravity motion
-        # if app.gravity and app.gravityLoc:
-        #     self.applyGravity(app.gravityLoc)
-        #     print('gav here')
-        #     cx, cy = app.gravityLoc
-        #     distanceToGavityLoc = distance(self.x, self.y, cx, cy)
-
-        #     # straight line
-        #     if distanceToGavityLoc > app.gravityRadius:
-        #         self.x += self.speed
-            
-        #     # change direction
-        #     else:
-        #         # self.curveTowardsCenter(cx, cy, distanceToGavityLoc)
-        #         dx = cx - self.x
-        #         dy = cy - self.y
-        #         self.vx = self.speed * (dx/distanceToGavityLoc)
-        #         self.vy = self.speed * (dy/distanceToGavityLoc)
-
-        #         self.x += self.vx
-        #         self.y += self.vy
-        #         if distance(self.x, self.y, cx, cy)<5:
-        #             self.reachedGravityCenter = True
-        # else:
-            # Normal straight-line motion
         self.inMotion = True
         self.x += self.speed
 
@@ -70,47 +45,6 @@ class Projectile:
             if distance(self.x, self.y, cx, cy)<5:
                 self.reachedGravityCenter = True
 
-
-    # def curveTowardsCenter(self, gx, gy, distanceToCenter):
-    #     # Calculate acceleration components toward the center
-    #     dx = gx - self.x
-    #     dy = gy - self.y
-
-    #     # Normalize the distance for velocity adjustment
-    #     ax = app.gravityPull * (dx / distanceToCenter)
-    #     ay = app.gravityPull * (dy / distanceToCenter)
-
-    #     # Adjust velocity
-    #     self.vx += ax
-    #     self.vy += ay
-
-    #     # Normalize speed to maintain constant projectile speed
-    #     velocityMagnitude = (self.vx**2 + self.vy**2)**0.5
-    #     self.vx = self.speed * (self.vx / velocityMagnitude)
-    #     self.vy = self.speed * (self.vy / velocityMagnitude)
-        
-    # def applyGravityEffect(self, gravityLoc):
-    #     (gx, gy) = gravityLoc
-    #     distanceToGavityLoc = distance(self.x, self.y, gx, gy)
-    #     dx = gx - self.x
-    #     dy = gy - self.y
-
-    #     if distanceToGavityLoc <= app.gravityRadius:
-
-    #         # formula
-    #         a = app.gravityPull/(distanceToGavityLoc**2)
-    #         ax = a * (dx/distanceToGavityLoc)
-    #         ay = a * (dy/distanceToGavityLoc)
-    #         self.vx += ax
-    #         self.vy += ay
-    #     else:
-    #         self.vx = self.speed * (dx/distanceToGavityLoc)
-    #         self.vy = self.speed * (dy/distanceToGavityLoc)
-        
-    #     if distanceToGavityLoc < 5:
-    #         print('here')
-    #         app.reachedGravityCenter = False
-
     def checkCollision(self, zombie):
         if abs(self.x - zombie.x) < 9 and abs(self.y - zombie.y) < 30:
             self.damageZombie(zombie, self.damage)
@@ -128,7 +62,7 @@ class peaShot(Projectile):
     def __init__(self, x, y):
         super().__init__(x+4, y-7, speed = 10, damage = 10)
         # citation: https://www.reddit.com/r/PlantsVSZombies/comments/16st8wb/the_most_legendary_hd_pea_projectile_hd/
-        self.imagePath = 'pea.png'
+        self.imagePath = 'images/pea.png'
         image = Image.open(self.imagePath)
         self.image = CMUImage(image)
         self.width = 15
@@ -139,7 +73,7 @@ class icePeaShot(Projectile):
         super().__init__(x+4, y-7, speed = 8, damage = 10)
 
         # citation: https://plantsvszombies.wiki.gg/wiki/Snow_Pea/Gallery
-        self.imagePath = 'snowpea.png'
+        self.imagePath = 'images/snowpea.png'
         image = Image.open(self.imagePath)
         self.image = CMUImage(image)
         self.width = 15
@@ -156,7 +90,7 @@ class melonPult(Projectile):
         super().__init__(startX, startY, speed = 0, damage = 20)
 
         # citation: https://plantsvszombies.fandom.com/wiki/Melon-pult/Gallery
-        self.imagePath = 'melonProjectile.png'
+        self.imagePath = 'images/melonProjectile.png'
         image = Image.open(self.imagePath)
         self.image = CMUImage(image)
         self.trajectory = calcParabola(startX, startY, targetX, targetY, travelTime, steps=50)
@@ -188,6 +122,7 @@ class melonPult(Projectile):
             self.image = CMUImage(image.rotate(self.rotation))
         else:
             self.inMotion = False
+            app.projectileList.remove(self)
     def draw(self):
         drawImage(self.image, self.x, self.y, align='center', 
                   width = self.width, height = self.height)
@@ -197,7 +132,7 @@ class bounceProjectile(Projectile):
         super().__init__(startX, startY, speed = 10, damage = 10)
 
         # citation: https://plantsvszombies.fandom.com/wiki/Melon-pult/Gallery
-        self.imagePath = 'bounceProjectile.png'
+        self.imagePath = 'images/bounceProjectile.png'
         self.preImage = Image.open(self.imagePath)
         self.image = CMUImage(self.preImage)
 

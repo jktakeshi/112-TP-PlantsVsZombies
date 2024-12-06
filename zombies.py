@@ -9,15 +9,37 @@ class Zombie:
         self.y = y
         self.health = health
         self.speed = speed
+        self.vx = -speed
+        self.vy = 0
+        self.newRowY = None
         self.slowDown = False
         self.damage = damage
         self.inMotion = True
+        self.changedRows = 0
 # move method
     def moveZombie(self):
+        cellHeight = app.boardHeight/app.rows
+        if self.newRowY != None:
+            if abs(self.y - self.newRowY) < 3:
+                self.y = self.newRowY
+                self.vy = 0
+                self.newRowY = None
+            else:
+                if self.newRowY > self.y: direction = 1
+                else: direction = -1
+                self.vy = self.speed * direction
+
+
         if self.inMotion == True:
-            self.x -= self.speed
-        else:
-            self.x = self.x
+            self.x += self.vx
+            self.y += self.vy
+        # else:
+        #     self.x = self.x
+    
+    def changeRow(self, newRow, app):
+        cellHeight = app.boardHeight/app.rows
+        self.newRowY = app.boardTop + (cellHeight*newRow) + cellHeight/2
+
 
     # if get hit by ice pea
     def applySlowDown(self, slowDownFactor):
@@ -31,11 +53,10 @@ class Zombie:
     def collisionWithPlant(self, plant):
         if abs(self.x - plant.x) < 35 and abs(self.y - plant.y) < 10:
             self.inMotion = False
-            # self.moveZombie()
             return True
         else:
-            self.inMotion = True
-        return False
+            # self.inMotion = True
+            return False
     
     def heavyDamage(self):
         self.imagePath = self.lowHealthImage
@@ -54,8 +75,8 @@ class regularZombie(Zombie):
         self.lowHealth = self.health/3
 
         # citation: https://plantsvszombies.fandom.com/wiki/Gallery_of_zombies
-        self.normalImage = 'regularZombie.png'
-        self.lowHealthImage = 'zombieBoneless.png'
+        self.normalImage = 'images/regularZombie.png'
+        self.lowHealthImage = 'images/zombieBoneless.png'
 
         self.imagePath = self.normalImage
         self.image = self.imageDraw()
@@ -66,8 +87,8 @@ class flagZombie(Zombie):
         self.lowHealth = self.health/3
 
         # citation: https://plantsvszombies.fandom.com/wiki/Gallery_of_zombies
-        self.normalImage = 'flagZombie.png'
-        self.lowHealthImage = 'zombieBoneless.png'
+        self.normalImage = 'images/flagZombie.png'
+        self.lowHealthImage = 'images/zombieBoneless.png'
 
         self.imagePath = self.normalImage
         self.image = self.imageDraw()
@@ -78,8 +99,8 @@ class coneHeadZombie(Zombie):
         self.lowHealth = self.health/3
 
         # citation: https://plantsvszombies.fandom.com/wiki/Gallery_of_zombies
-        self.normalImage = 'coneHeadZombie.png'
-        self.lowHealthImage = 'regularZombie.png'
+        self.normalImage = 'images/coneHeadZombie.png'
+        self.lowHealthImage = 'images/regularZombie.png'
 
         self.imagePath = self.normalImage
         self.image = self.imageDraw()
@@ -90,8 +111,8 @@ class bucketHeadZombie(Zombie):
         self.lowHealth = self.health/3
 
         # citation: https://plantsvszombies.fandom.com/wiki/Gallery_of_zombies
-        self.normalImage = 'bucketHeadZombie.png'
-        self.lowHealthImage = 'regularZombie.png'
+        self.normalImage = 'images/bucketHeadZombie.png'
+        self.lowHealthImage = 'images/regularZombie.png'
 
         self.imagePath = self.normalImage
         self.image = self.imageDraw()
@@ -102,8 +123,8 @@ class poleVaultingZombie(Zombie):
         self.lowHealth = self.health/3
 
         # citation: https://plantsvszombies.fandom.com/wiki/Gallery_of_zombies
-        self.normalImage = 'poleVaultingZombie.png'
-        self.lowHealthImage = 'poleVaultingNoPole.png'
+        self.normalImage = 'images/poleVaultingZombie.png'
+        self.lowHealthImage = 'images/poleVaultingNoPole.png'
 
         self.imagePath = self.normalImage
         self.image = self.imageDraw()

@@ -11,6 +11,7 @@ from PIL import Image
 import math
 import random
 import copy
+from autoplay import *
 
 def distance(x1, y1, x2, y2):
     return (((x1-x2)**2) + ((y1-y2)**2))**0.5
@@ -26,30 +27,46 @@ def onAppStart(app):
 
     # frontyard
     # citation: https://pvz-rp.fandom.com/wiki/Player%27s_House
-    path = 'frontyard.png'
+    path = 'images/frontyard.png'
     image = Image.open(path)
     app.frontYard = CMUImage(image)
 
     # seed slot
     # citation: https://plantsvszombies.fandom.com/wiki/Seed_slot
-    path = 'emptySeedSlot.png'
+    path = 'images/emptySeedSlot.png'
     image = Image.open(path)
     app.seedSlot = CMUImage(image)
 
+    # empty seed selector
+    # citation = https://plantsvszombies.fandom.com/wiki/Seed_slot?file=Seed_Slot.png
+    path = 'images/emptySeedSelector.png'
+    image = Image.open(path)
+    app.emptySeedSelector = CMUImage(image)
+
     # citation: https://plantsvszombies.fandom.com/wiki/Shovel
-    path = 'shovel.png'
+    path = 'images/shovel.png'
     image = Image.open(path)
     app.shovelIcon = CMUImage(image)
 
     # citation: https://plantsvszombies.fandom.com/wiki/Seed_slot?file=Seed_Slot.png
-    path = 'emptySeedSelector.png'
+    path = 'images/emptySeedSelector.png'
     image = Image.open(path)
     app.emptyTargetIcon = CMUImage(image)
 
     # citation: https://en.ac-illust.com/clip-art/24289523/target-icon-red
-    path = 'targetIcon.png'
+    path = 'images/targetIcon.png'
     image = Image.open(path)
     app.targetIcon = CMUImage(image)
+
+    # citation: https://www.vectorstock.com/royalty-free-vector/pause-play-button-icon-vector-26538112
+    path = 'images/playPauseButton.png'
+    image = Image.open(path)
+    app.playPauseButton = CMUImage(image)
+
+    # citation: https://www.bilibili.tv/en/video/2041211460 thumbnail of the video (searched on google)
+    path = 'images/finalWave.png'
+    image = Image.open(path)
+    app.finalWaveImage = CMUImage(image)
 
     # plant panel
     app.plantsPanelList = []
@@ -107,6 +124,10 @@ def onAppStart(app):
     app.gravityStartTime = None
     app.gravityDuration = 4
 
+    app.autoplay = False
+    app.autoplayCount = 0
+    app.autoplayStatus = 'Off'
+
 # plant panel outline
 def drawPlantPanel(app):
     drawRect(app.plantPanelX, app.plantPanelY, app.plantPanelWidth, app.plantPanelHeight, fill=None)
@@ -134,11 +155,12 @@ def onMousePress(app, mouseX, mouseY):
             app.sunList.remove(sun)
             app.sunPoints += 25
             return
-    
+    # shovel selection
     if distance(mouseX, mouseY, 715, 37) <= 25:
         app.shovel = Shovel(715,37)
         app.shovelSelected = True
     
+    # gravity effect
     if distance(mouseX, mouseY, 772, 37) <= 25:
         app.copiedTarget = app.target.copyTarget()
         if app.target.coolingDown == False:
@@ -147,6 +169,15 @@ def onMousePress(app, mouseX, mouseY):
             app.gravityLocSelect = True
             app.gravityLoc = (mouseX, mouseY)
             app.copiedTarget.x, app.copiedTarget.y = mouseX, mouseY
+    # autoplay
+    if distance(mouseX, mouseY, 829, 37) <= 25:
+        if app.autoplayCount%2 == 0:
+            app.autoplay = True
+            app.autoplayStatus = 'On'
+        else: 
+            app.autoplay = False
+            app.autoplayStatus = 'Off'
+        app.autoplayCount += 1
 
 def onMouseDrag(app, mouseX, mouseY):
     if app.selectedPlant:
@@ -164,8 +195,8 @@ def onMouseRelease(app, mouseX, mouseY):
             row, col  = cell
             cellLeft, cellTop = getCellLeftTop(app, row, col)
             cellWidth, cellHeight = getCellSize(app)
-            app.selectedPlant.x = cellLeft + cellWidth // 2
-            app.selectedPlant.y = cellTop + cellHeight // 2
+            app.selectedPlant.x = cellLeft + cellWidth / 2
+            app.selectedPlant.y = cellTop + cellHeight / 2
             if (app.selectedPlant.x, app.selectedPlant.y) not in app.plantsLocation:
                 app.plantsGridList.append(app.selectedPlant)
                 app.plantsLocation.append((app.selectedPlant.x, app.selectedPlant.y))
@@ -187,8 +218,8 @@ def onMouseRelease(app, mouseX, mouseY):
             row, col  = cell
             cellLeft, cellTop = getCellLeftTop(app, row, col)
             cellWidth, cellHeight = getCellSize(app)
-            selectedX = cellLeft + cellWidth // 2
-            selectedY = cellTop + cellHeight // 2
+            selectedX = cellLeft + cellWidth / 2
+            selectedY = cellTop + cellHeight / 2
             if (selectedX, selectedY) in app.plantsLocation:
                 index = app.plantsLocation.index((selectedX, selectedY))
                 app.sunPoints += app.plantsGridList[index].sunCost
@@ -219,7 +250,12 @@ def onKeyPress(app, key):
         app.paused = False
         plantPanel(app)
 
+
 def onStep(app):
+    if app.autoplay:
+        collectSun(app)
+        plantDecision(app)
+
     if not app.gameOverLose and not app.gameOverWin and not app.paused:
         app.counter += 1
         spawnZombies(app, app.currentLevel)
@@ -228,69 +264,68 @@ def onStep(app):
         for plant in app.plantsGridList:
             zombiesInRow = [zombie for zombie in app.zombiesList if abs(zombie.y - plant.y) < 10]
             if zombiesInRow and plant.canShoot():
-                predictedX, predictedY = predictContact(plant.x, plant.y, zombiesInRow[0], steps = 100, travelTime = 2.0)
-                # print(f'predictedX: {predictedX}, zombieX: {zombiesInRow[0].x}')
+                predictedX, predictedY = predictContact(plant.x, plant.y, zombiesInRow[0], steps = 1000, travelTime = 2.0)
                 if isinstance(plant, melon):
                     projectile = plant.shoot(predictedX, predictedY)
                 else:
                     projectile = plant.shoot()
                 app.projectileList.append(projectile)
 
-        # move zombie and check for collision with plant
-        for zombie in app.zombiesList:
-            zombie.moveZombie()
-            for plant in app.plantsGridList:
-                if zombie.collisionWithPlant(plant):
-                    zombie.damagePlant(plant, zombie.damage/app.stepsPerSecond)
-                    if plant.health <= 0:
-                        app.plantsGridList.remove(plant)
-                        zombie.inMotion = True
-        
-        # gravity and effect duration
-        if app.gravity and app.gravityStartTime != None:
-            elapsedTime = app.counter/app.stepsPerSecond - app.gravityStartTime 
-            if elapsedTime >= app.gravityDuration:
-                deactivateGravity(app)        
-
-        # move projectile and check for collision
+        # move projectile
         for projectile in app.projectileList:
             projectile.move()
+
+            # gavity effect
             if app.gravity and app.gravityLoc:
                 projectile.applyGravity(app.gravityLoc)
                 if projectile.reachedGravityCenter:
                     app.projectileList.remove(projectile)
+            # checking for collision
             for zombie in app.zombiesList:
                 if projectile.checkCollision(zombie):
-                    print('here')
+                    projectile.inMotion = False
+                    # for slow down effect
                     if isinstance(projectile, icePeaShot):
                         projectile.slowDownEffect(zombie)
+
                     projectile.damageZombie(zombie, projectile.damage)
+                    # bouncing projectile effect
                     if isinstance(projectile, bounceProjectile):
                         if projectile.speed > 0:
                             projectile.bounce(app, zombie, cellHeight = app.boardHeight/app.rows)
                             if projectile.speed <= 2:
                                 if projectile in app.projectileList:
                                     app.projectileList.remove(projectile)
-                    # else:
-                    #     projectile.inMotion = False
+                        if projectile in app.projectileList and not projectile.isBouncing:
+                            app.projectileList.remove(projectile)
+
+                    else:
+                        projectile.inMotion = False
+                        if projectile in app.projectileList:
+                            app.projectileList.remove(projectile)
                     if 0 < zombie.health <= zombie.lowHealth:
                         zombie.heavyDamage()
                     elif zombie.health <= 0:
                         app.zombiesList.remove(zombie)
-                    if isinstance(projectile, bounceProjectile) and projectile in app.projectileList:
-                        if not projectile.isBouncing:
-                            app.projectileList.remove(projectile)
-                
-                else:
-                    if projectile in app.projectileList and not projectile.inMotion:
-                        app.projectileList.remove(projectile)
-            # if (app.width < projectile.x or projectile.x < 0 or projectile.y > app.height or 
-            #     (app.gravity and app.gravityLoc != None and 
-            #      distance(projectile.x, projectile.y, app.gravityLoc[0], app.gravityLoc[1])) < 5):
+            # if projectile.y == zombie.y:
             #     app.projectileList.remove(projectile)
-                # if isinstance(projectile, melonPult):
-                #     if projectile.y == zombie.y:
-                #         app.projectileList.remove(projectile)
+
+        # move zombie and check for collision with plant
+        for zombie in app.zombiesList:
+            zombie.moveZombie()
+            for plant in app.plantsGridList:
+                if zombie.collisionWithPlant(plant):
+                    zombie.inMotion = False
+                    zombie.damagePlant(plant, zombie.damage/app.stepsPerSecond)
+                if plant.health <= 0:
+                    zombie.inMotion = True
+                    app.plantsGridList.remove(plant)
+        
+        # gravity and effect duration
+        if app.gravity and app.gravityStartTime != None:
+            elapsedTime = app.counter/app.stepsPerSecond - app.gravityStartTime 
+            if elapsedTime >= app.gravityDuration:
+                deactivateGravity(app)        
         
         # generating sun from the top of the screen
         if app.counter % (app.stepsPerSecond * 10) == 0:
@@ -314,32 +349,24 @@ def onStep(app):
             for zombie in app.zombiesList:
                 if zombie.x <= app.boardLeft - 40:
                     app.gameOverLose = True
-        
-        # animating final wave label
-        if app.drawFinalLabel:
-            elapsedTime = (app.counter-app.finalLabelTimer)/app.stepsPerSecond
-            if elapsedTime < app.finalLabelFadeTime: #fading in
-                app.finalLabelOpacity = elapsedTime/app.finalLabelFadeTime
-            elif elapsedTime < app.finalLabelDuration + app.finalLabelFadeTime:
-                app.finalLabelOpacity = 100
-            elif elapsedTime < app.finalLabelDuration + (2*app.finalLabelFadeTime): #fading out
-                remaining = (app.finalLabelDuration + (2*app.finalLabelFadeTime)) - elapsedTime
-                app.finalLabelOpacity = remaining/app.finalLabelFadeTime
-            else: app.finalLabel = False
 
 def drawGameOver(app):
     # citation: https://plantsvszombies.fandom.com/wiki/Brain/Gallery
-    path = 'gameOver.png'
+    path = 'images/gameOver.png'
     image = Image.open(path)
     gameOverLoseSign = CMUImage(image)
+
+    winPath = 'images/gameOverWin.png'
+    winImage = Image.open(winPath)
+    gameOverWinSign = CMUImage(winImage)
     if app.gameOverLose:
         drawRect(0, 0, app.width, app.height, opacity=60)
-        drawImage(gameOverLoseSign, app.width//2, app.height//2, align='center')
+        drawImage(gameOverLoseSign, app.width/2, app.height/2, align='center')
     elif app.gameOverWin:
-        drawLabel("Game Over", app.width//2, app.height//2, bold=True, size=50, font='serif')
-        drawLabel("You won!", app.width//2, app.height//2 + 50, fill='red', bold=True, size=50, font='serif')
+        drawRect(0, 0, app.width, app.height, opacity=60)
+        drawImage(gameOverWinSign, app.width/2, app.height/2, align='center')
 
-#Grid (from CS Academy)
+# drawing grid (from CS Academy)
 def drawGrid(app):
     for row in range(app.rows):
         for col in range(app.cols):
@@ -391,7 +418,7 @@ def redrawAll(app):
         drawLabel(f'{app.sunPoints}', 270, 60, bold = True)
         drawGrid(app)
         drawPlantPanel(app)
-        drawGameOver(app)
+        
         if app.selectedPlant:
             app.selectedPlant.drawPlant()
         if app.shovel:
@@ -399,6 +426,12 @@ def redrawAll(app):
         if app.target:
             app.target.drawTargetSeed()
         drawImage(app.targetIcon, 772, 37, align='center', width = 45, height = 50)
+        drawImage(app.emptySeedSelector, 829, 37, align='center', width = 45, height = 50)
+        drawImage(app.playPauseButton, 829, 37, align='center', width = 45, height = 50)
+        drawImage(app.emptySeedSelector, 851, 12, width = 90, height = 50)
+        drawLabel(f'Autoplay: {app.autoplayStatus}', 896, 37, font = 'serif', bold=True)
+
+
         if app.copiedTarget:
             app.copiedTarget.drawTarget()
         
@@ -414,17 +447,18 @@ def redrawAll(app):
 
         for sun in app.sunList:
             sun.drawPlant()
-        
-        if app.finalWaveLabel:
-            drawLabel("Final Wave!", app.width//2, app.height//2, size = 50,
-                      bold = True, opacity=app.finalLabelOpacity, align='center', fill='red', font='serif')
 
+        drawGameOver(app)
+        
+        if app.drawFinalLabel:
+            drawImage(app.finalWaveImage, app.width/2, app.height/2, align='center')
+           
         if app.gravity and app.gravityLoc and app.target:
             cx, cy = app.gravityLoc
             drawCircle(cx, cy, app.gravityRadius, fill = 'gray', opacity=50)
         
         if app.gravityLocSelect:
-            drawLabel("Select a spot", app.width//2, app.height//2, size = 40,
+            drawLabel("Select a spot", app.width/2, app.height/2, size = 40,
                       bold = True, align='center', font='serif')
 
 

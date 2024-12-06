@@ -2,7 +2,7 @@ from cmu_graphics import *
 from PIL import Image
 
 # citation: https://rainyday.blog/2015/07/31/first-impressions-plants-vs-zombies/
-path = 'titleScreen.png'
+path = "images/titleScreen.png"
 image = Image.open(path)
 app.titleScreen = CMUImage(image)
 

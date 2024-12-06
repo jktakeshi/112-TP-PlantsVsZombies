@@ -20,7 +20,9 @@ class Plant:
         self.startCoolDownTime = None
         self.coolingDown = False
         self.seedOpacity = 100
-        
+        self.count = 0
+        self.width = 45
+        self.height = 50
 
     def isCoolingDown(self):
         if self.startCoolDownTime == None:
@@ -48,7 +50,7 @@ class Plant:
                 self.coolingDown = False
     
     def drawPlant(self):
-        drawImage(self.image, self.x, self.y, align='center', width = 45, height = 50)
+        drawImage(self.image, self.x, self.y, align='center', width = self.width, height = self.height)
 
     def damagePlant(self, damage):
         self.health -= damage
@@ -66,16 +68,17 @@ class PeaShooter(Plant):
         super().__init__(x, y, shootingInterval=1.425)
         self.health = 100
         # citation: https://plantsvszombies.fandom.com/wiki/Peashooter/Gallery
-        self.imagePath = 'peaShooter.png'
+        self.imagePath = 'images/peaShooter.png'
         image = Image.open(self.imagePath)
         self.image = CMUImage(image)
 
         # citation: https://plantsvszombies.fandom.com/wiki/Peashooter/Gallery
-        self.seedImagePath = 'peaShooterSeed.png'
+        self.seedImagePath = 'images/peaShooterSeed.png'
         seedImage = Image.open(self.seedImagePath)
         self.seedImage = CMUImage(seedImage)
-
-        self.sunCost = 1
+        self.damage = peaShot(x, y).damage
+        self.sunCost = 100
+        self.type = 'offensive'
     
     def shoot(self):
         self.lastShotTime = time()
@@ -86,16 +89,17 @@ class IcePeaShooter(Plant):
         super().__init__(x, y, shootingInterval=2.25)
         self.health = 75
         # citation: https://plantsvszombies.fandom.com/wiki/Snow_Pea/Gallery
-        self.imagePath = 'snowpeaShooter.png'
+        self.imagePath = 'images/snowpeaShooter.png'
         image = Image.open(self.imagePath)
         self.image = CMUImage(image)
 
         # citation: https://plantsvszombies.fandom.com/wiki/Snow_Pea/Gallery
-        self.seedImagePath = 'snowPeaSeed.png'
+        self.seedImagePath = 'images/snowPeaSeed.png'
         seedImage = Image.open(self.seedImagePath)
         self.seedImage = CMUImage(seedImage)
-
+        self.damage = icePeaShot(x, y).damage
         self.sunCost = 175
+        self.type = 'offensive'
     
     def shoot(self):
         self.lastShotTime = time()
@@ -107,17 +111,18 @@ class Wallnut(Plant):
 
         # citation: https://plantsvszombies.fandom.com/wiki/Wall-nut/Gallery
         self.health = 200
-        self.imagePath = 'wallnut.png'
+        self.imagePath = 'images/wallnut.png'
         image = Image.open(self.imagePath)
         self.image = CMUImage(image)
-
+        self.damage = 0
         # citation: https://plantsvszombies.fandom.com/wiki/Wall-nut/Gallery
-        self.seedImagePath = 'wallnutSeed.png'
+        self.seedImagePath = 'images/wallnutSeed.png'
         seedImage = Image.open(self.seedImagePath)
         self.seedImage = CMUImage(seedImage)
 
         self.sunCost = 50
         self.coolDownTime = 20
+        self.type = 'defensive'
 
 class melon(Plant):
     def __init__(self, x, y):
@@ -125,16 +130,19 @@ class melon(Plant):
         self.health = 75
 
         # citation: https://plantsvszombies.fandom.com/wiki/Melon-pult/Gallery
-        self.imagePath = 'melon.png'
+        self.imagePath = 'images/melon.png'
         image = Image.open(self.imagePath)
         self.image = CMUImage(image)
+        self.width = 65
+        self.height = 65
 
         # citation: https://plantsvszombies.fandom.com/wiki/Melon-pult/Gallery
-        self.seedImagePath = 'melonSeed.png'
+        self.seedImagePath = 'images/melonSeed.png'
         seedImage = Image.open(self.seedImagePath)
         self.seedImage = CMUImage(seedImage)
-
-        self.sunCost = 10
+        self.damage = melonPult(x,y,x+5,y+5,travelTime=2.0).damage
+        self.sunCost = 1
+        self.type = 'offensive'
     
     def shoot(self, targetX, targetY):
         self.lastShotTime = time()
@@ -146,23 +154,25 @@ class Sunflower(Plant):
         self.prevSunTime = None
 
         #citation: https://plantsvszombies.fandom.com/wiki/Sunflower/Gallery
-        self.imagePath = 'sunflower.png'
+        self.imagePath = 'images/sunflower.png'
         self.sunCount = 0
         image = Image.open(self.imagePath)
         self.image = CMUImage(image)
 
         #citation: https://plantsvszombies.fandom.com/wiki/Sunflower/Gallery
-        self.seedImagePath = 'sunflowerSeed.png'
+        self.seedImagePath = 'images/sunflowerSeed.png'
         seedImage = Image.open(self.seedImagePath)
         self.seedImage = CMUImage(seedImage)
-
+        self.damage = 0
         self.sunCost = 50
+        self.collectStartTime = None
+        self.type = None
     
     
     def createSun(self):
         if self.prevSunTime == None:
             self.prevSunTime = time()
-        if time() - self.prevSunTime >= 10:
+        if time() - self.prevSunTime >= 8:
             self.prevSunTime = None
             if self.sunCount % 2 == 0:
                 return Sun(self.x - 30, self.y + 30, heightLimit = self.y + 10)
@@ -181,9 +191,11 @@ class Sun(Plant):
         self.startLifeTime = None
         self.collected = False
         self.heightLimit = heightLimit
+        self.damage = 0
+        self.collectStartTime = None
 
         # citation: https://heroism.fandom.com/wiki/Sun_(Plants_vs._Zombies)
-        self.imagePath = 'sun.png'
+        self.imagePath = 'images/sun.png'
 
         image = Image.open(self.imagePath)
         self.image = CMUImage(image)
@@ -214,18 +226,19 @@ class BouncePlant(Plant):
         super().__init__(x, y, shootingInterval=1.7)
         self.health = 75
         # citation: 
-        self.imagePath = 'bouncePlant.png'
+        self.imagePath = 'images/bouncePlant.png'
         image = Image.open(self.imagePath)
         self.image = CMUImage(image)
 
         # citation: 
-        self.seedImagePath = 'bouncePlantSeed.png'
+        self.seedImagePath = 'images/bouncePlantSeed.png'
         seedImage = Image.open(self.seedImagePath)
         self.seedImage = CMUImage(seedImage)
-
-        self.sunCost = 1
+        self.damage = bounceProjectile(x,y).damage
+        self.sunCost = 125
         self.coolDownTime = 15
-    
+        self.type = 'offensive'
+
     def shoot(self):
         self.lastShotTime = time()
         return bounceProjectile(self.x, self.y)

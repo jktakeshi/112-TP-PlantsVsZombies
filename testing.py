@@ -6,32 +6,27 @@ from preGame import *
 from titleScreen import *
 from parabolicMotion import *
 from projectile import *
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import math
 import random
 import copy
 
 
 
-def onAppStart(app):
-    app.imagePath = 'bounceProjectile.png'
-    originalImage = Image.open(app.imagePath)
-    maxDimension = max(originalImage.width, originalImage.height)
-    paddedImage = Image.new("RGBA", (maxDimension, maxDimension), (0, 0, 0, 0))  # Transparent background
-    paddedImage.paste(originalImage, 
-                        ((maxDimension - originalImage.width) // 2, 
-                           (maxDimension - originalImage.height) // 2))
-    rotatedImage = paddedImage.rotate(45, resample=Image.BICUBIC, expand=True)
+font_path = "fonts/seriesOrbit.ttf"
+font_size = 20  # Adjust the size as needed
+font = ImageFont.truetype(font_path, font_size)
 
-    app.image = CMUImage(rotatedImage)
-    # arg = 45
-    # rotatedImage = Image.open(app.imagePath)
-    # app.image = CMUImage(rotatedImage.rotate(arg))
+# Create an image to draw text on
+image = Image.new("RGBA", (300, 100), (255, 255, 255, 0))  # Transparent background
+draw = ImageDraw.Draw(image)
+
+# Draw text using the loaded font
+# draw.text((10, 10), "Hello, Series Orbit!", font=font, fill=(0, 0, 0, 255))
 
 def redrawAll(app):
-    drawImage(app.image, 50, 50, align='center', width = 80, height = 80)
-    drawImage(app.image, 50, 200, align='center')
-
+    # drawImage(app.customText, 100, 100)
+    draw.text((10, 10), "Hello World!", font=font, fill=(3, 3, 3))
 def main():
     runApp()
 

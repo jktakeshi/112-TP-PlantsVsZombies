@@ -5,19 +5,18 @@ from PIL import Image
 import random
 from time import *
 
-path = 'levelSelector.png'
+path = 'images/levelSelector.png'
 image = Image.open(path)
 app.levelSelector = CMUImage(image)
-
 Levels = {
     'easy': {
-        'plants': [Sunflower, PeaShooter, Wallnut],
+        'plants': [Sunflower, PeaShooter, Wallnut, melon],
         'zombies': [regularZombie],
         'startZombieSpawn': 10,
         'zombieSpawnRate': 13,
         'finalWaveSpawnRate': 10,
-        'preFinalWaveZombies': 1,
-        'finalWaveZombies': 10,
+        'preFinalWaveZombies': 10,
+        'finalWaveZombies': 15,
         'finalWaveTypes': [regularZombie],
         'finalWaveDelay': 8
     },
@@ -25,8 +24,8 @@ Levels = {
         'plants': [Sunflower, PeaShooter, IcePeaShooter, Wallnut, BouncePlant],
         'zombies': [regularZombie, coneHeadZombie],
         'startZombieSpawn': 10,
-        'zombieSpawnRate': 10,
-        'finalWaveSpawnRate': 8,
+        'zombieSpawnRate': 11,
+        'finalWaveSpawnRate': 9,
         'preFinalWaveZombies': 15,
         'finalWaveZombies': 20,
         'finalWaveTypes': [regularZombie, coneHeadZombie],
@@ -37,8 +36,8 @@ Levels = {
         'plants': [Sunflower, PeaShooter, IcePeaShooter, melon, Wallnut, BouncePlant],
         'zombies': [regularZombie, coneHeadZombie],
         'startZombieSpawn': 10,
-        'zombieSpawnRate': 9,
-        'finalWaveSpawnRate': 7,
+        'zombieSpawnRate': 11,
+        'finalWaveSpawnRate': 8,
         'preFinalWaveZombies': 15,
         'finalWaveZombies': 40,
         'finalWaveTypes': [regularZombie, coneHeadZombie, bucketHeadZombie],
@@ -50,30 +49,30 @@ Levels = {
 def drawLevelSelector(app):
     drawImage(app.levelSelector, 0, 0, width=app.width, height=app.height)
     gap = 90
-    startX = 530
+    startX = 555
     width = 300
     startY = 130
-    height = 60
+    height = 90
     for i in range(3):
-        drawRect(startX, startY + i*gap, width, height, fill=None, border='black')
         if i == 0:
             label = "Easy"
         elif i == 1:
             label = 'Medium'
         elif i == 2:
             label = "Hard"
-        drawLabel(label, startX + width//2, startY + i*gap + height//2, bold=True, font='serif', size = 40)
-
+        drawImage('images/selectLevelPanel.png', startX + width//2 - i*20, startY + i*gap + height//2, align='center')
+        drawLabel(label, startX + width//2 - i*20, startY + i*gap + height//2, bold=True, font='serif', size = 40, rotateAngle=8)
+        
 def levelsToGame(app, mouseX, mouseY):
-    if 530 <= mouseX <= 830 and 130 <= mouseY <= 190:
+    if 548 <= mouseX <= 842 and 110 <= mouseY <= 190:
         app.currentLevel = 'easy'
         app.gameState = 'preGame'
         plantPanel(app)
-    elif 530 <= mouseX <= 830 and 220 <= mouseY <= 280:
+    elif 528 <= mouseX <= 830 and 245 <= mouseY <= 290:
         app.currentLevel = 'medium'
         app.gameState = 'preGame'
         plantPanel(app)
-    elif 530 <= mouseX <= 830 and 310 <= mouseY <= 370:
+    elif 508 <= mouseX <= 830 and 332 <= mouseY <= 422:
         app.currentLevel = 'hard'
         app.gameState = 'preGame'
         plantPanel(app)
@@ -84,7 +83,7 @@ class Shovel:
         self.y = y
         self.originalX = x
         self.originalY = y
-        path = 'shovelIcon.png'
+        path = 'images/shovelIcon.png'
         image = Image.open(path)
         self.image = CMUImage(image)
     def drawShovel(self):
@@ -99,7 +98,7 @@ class TargetIcon:
         self.y = y
         self.originalX = x
         self.originalY = y
-        path = 'targetIcon.png'
+        path = 'images/targetIcon.png'
         image = Image.open(path)
         self.image = CMUImage(image)
         self.coolDownTime = 30
@@ -108,7 +107,7 @@ class TargetIcon:
         self.seedOpacity = 100
 
         # citation: 
-        self.seedImagePath = 'emptySeedSelector.png'
+        self.seedImagePath = 'images/emptySeedSelector.png'
         seedImage = Image.open(self.seedImagePath)
         self.seedImage = CMUImage(seedImage)
 
@@ -161,7 +160,6 @@ def plantPanel(app):
         plant.x = plant.x + spacing * index
         index += 1
     
-
 def spawnZombies(app, currLevel):
     currTime = app.counter/app.stepsPerSecond
     gameLevel = Levels[currLevel]
@@ -169,13 +167,14 @@ def spawnZombies(app, currLevel):
     # final wave status
     if app.zombiesSpawned == gameLevel['preFinalWaveZombies'] and len(app.zombiesList) == 0 and not app.finalWave:
         if app.finalWaveStartTimer == None:
+            app.finalWaveStartTimer = app.counter/app.stepsPerSecond
+        elapsedTime = currTime - app.finalWaveStartTimer 
+        if 2 <= (elapsedTime) <= 6:
             app.drawFinalLabel = True
-            app.finalWaveStartTimer = currTime
-        if currTime - app.finalWaveStartTimer > gameLevel['finalWaveDelay']:
+        elif elapsedTime > 6: 
+            app.drawFinalLabel = False
             app.finalWave = True
-            app.finalWaveLabel = True
-            app.finalLabelTimer = app.counter
-            app.finalLabelOpacity = 0
+            app.finalWaveStartTimer = None
     
     spawnRate = gameLevel['zombieSpawnRate']
     if currLevel in ['hard', 'medium']:
@@ -199,9 +198,15 @@ def spawnZombies(app, currLevel):
     
     # Final wave
     if app.finalWave:
+        if app.finalWaveStartTimer == None:
+            app.finalWaveStartTimer = currTime
+        elapsedTime = currTime - app.finalWaveStartTimer
+        # gradual increase in spawning of zombies
+        finalSpawnRate = gameLevel['finalWaveSpawnRate'] - (elapsedTime/50)
+
         if app.finalWaveSpawned < gameLevel['finalWaveZombies']:
-            if currTime % spawnRate < 0.5:
-                if currLevel == 'hard':
+            if currTime % finalSpawnRate < 0.3:
+                if currLevel in ['hard', 'medium']:
                     row = smartZombieRow(app)
                 else:
                     row = random.choice(range(app.rows))
@@ -216,27 +221,50 @@ def spawnZombies(app, currLevel):
         elif app.finalWaveSpawned == gameLevel['finalWaveZombies'] and len(app.zombiesList) == 0:
             app.gameOverWin = True
 
-def smartZombieRow(app):
-    cellHeight = app.boardHeight/app.rows
-    # getting the number of plants per row
-    plantCountsRow = [0] * app.rows
-    for plant in app.plantsGridList:
-        for row in range(app.rows):
-            rowTop = app.boardTop + cellHeight*row
-            rowBottom = rowTop + cellHeight
-            if rowTop <= plant.y <= rowBottom:
-                plantCountsRow[row] += 1
-    minPlantCount = min(plantCountsRow)
-    rowsWithMinPlants = [row for row in range(len(plantCountsRow)) if plantCountsRow[row]==minPlantCount]
+    # moving zombies diagonally based on row plant damage
+    if currLevel == 'hard':
+        if currTime > 60:
+            plantRowsDamage = calculateRowsDamage(app)
+            for zombie in app.zombiesList:
+                cellHeight = app.boardHeight/app.rows
+                changeZombieRow(zombie, plantRowsDamage, cellHeight)
 
+def smartZombieRow(app):
+    plantRowsDamage = calculateRowsDamage(app)
+    minDamageCount = min(plantRowsDamage)
+    rowsWithMinDamage = [row for row in range(len(plantRowsDamage)) if plantRowsDamage[row]==minDamageCount]
+    
     # 90% likelihood for rows with least plants
     if random.random() < 0.9:
-        return random.choice(rowsWithMinPlants)
+        return random.choice(rowsWithMinDamage)
     else:
         return random.choice(range(app.rows))
+
+def changeZombieRow(zombie, plantRowsDamage, cellHeight):
+    if zombie.changedRows < 2:
+        currRow = int((zombie.y - app.boardTop)/cellHeight)
+        if  0 <= currRow < app.rows:
+            adjRows = [row for row in [currRow-1, currRow+1] if 0 <= row < app.rows]
+            for adjRow in adjRows:
+                if plantRowsDamage[adjRow] < plantRowsDamage[currRow]:
+                    zombie.changeRow(adjRow, app)
+                    zombie.changedRows += 1
+                    break
 
 def getZombieLoc(app, row):
     cellHeight = app.boardHeight/app.rows
     zombieX = app.boardLeft + app.boardWidth + 10
     zombieY = app.boardTop + row * cellHeight + cellHeight//2
     return zombieX, zombieY
+
+def calculateRowsDamage(app):
+    cellHeight = app.boardHeight/app.rows
+    # getting the number of plants per row
+    plantRowsDamage = [0] * app.rows
+    for plant in app.plantsGridList:
+        for row in range(app.rows):
+            rowTop = app.boardTop + cellHeight*row
+            rowBottom = rowTop + cellHeight
+            if rowTop <= plant.y <= rowBottom:
+                plantRowsDamage[row] += plant.damage
+    return plantRowsDamage
