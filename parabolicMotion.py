@@ -1,5 +1,5 @@
 from cmu_graphics import *
-import math
+
 
 def calcParabola(startX, startY, targetX, targetY, travelTime, steps=100, yDisplacement=80):
     dx = targetX - startX

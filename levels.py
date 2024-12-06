@@ -5,12 +5,13 @@ from PIL import Image
 import random
 from time import *
 
+# citation: https://gombis.com/vm/plants-vs-zombies searched on google (thumbnail)
 path = 'images/levelSelector.png'
 image = Image.open(path)
 app.levelSelector = CMUImage(image)
 Levels = {
     'easy': {
-        'plants': [Sunflower, PeaShooter, Wallnut, melon],
+        'plants': [Sunflower, PeaShooter, Wallnut],
         'zombies': [regularZombie],
         'startZombieSpawn': 10,
         'zombieSpawnRate': 13,
@@ -60,6 +61,7 @@ def drawLevelSelector(app):
             label = 'Medium'
         elif i == 2:
             label = "Hard"
+        # citation: https://plantsvszombies.fandom.com/wiki/Plants_vs._Zombies_2/Gallery_of_plant_sprites
         drawImage('images/selectLevelPanel.png', startX + width//2 - i*20, startY + i*gap + height//2, align='center')
         drawLabel(label, startX + width//2 - i*20, startY + i*gap + height//2, bold=True, font='serif', size = 40, rotateAngle=8)
         
@@ -83,6 +85,7 @@ class Shovel:
         self.y = y
         self.originalX = x
         self.originalY = y
+        # citation: https://plantsvszombies.fandom.com/wiki/Shovel
         path = 'images/shovelIcon.png'
         image = Image.open(path)
         self.image = CMUImage(image)
@@ -98,6 +101,7 @@ class TargetIcon:
         self.y = y
         self.originalX = x
         self.originalY = y
+        # citation: https://en.ac-illust.com/clip-art/24289523/target-icon-red
         path = 'images/targetIcon.png'
         image = Image.open(path)
         self.image = CMUImage(image)
@@ -106,7 +110,7 @@ class TargetIcon:
         self.startCoolDownTime = None
         self.seedOpacity = 100
 
-        # citation: 
+        # citation: https://plantsvszombies.fandom.com/wiki/Seed_slot?file=Seed_Slot.png
         self.seedImagePath = 'images/emptySeedSelector.png'
         seedImage = Image.open(self.seedImagePath)
         self.seedImage = CMUImage(seedImage)

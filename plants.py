@@ -141,7 +141,7 @@ class melon(Plant):
         seedImage = Image.open(self.seedImagePath)
         self.seedImage = CMUImage(seedImage)
         self.damage = melonPult(x,y,x+5,y+5,travelTime=2.0).damage
-        self.sunCost = 1
+        self.sunCost = 300
         self.type = 'offensive'
     
     def shoot(self, targetX, targetY):
@@ -225,12 +225,12 @@ class BouncePlant(Plant):
     def __init__(self, x, y):
         super().__init__(x, y, shootingInterval=1.7)
         self.health = 75
-        # citation: 
+        # citation: https://plantsvszombies.fandom.com/wiki/Cactus/Gallery
         self.imagePath = 'images/bouncePlant.png'
         image = Image.open(self.imagePath)
         self.image = CMUImage(image)
 
-        # citation: 
+        # citation: https://plantsvszombies.fandom.com/wiki/Cactus/Gallery
         self.seedImagePath = 'images/bouncePlantSeed.png'
         seedImage = Image.open(self.seedImagePath)
         self.seedImage = CMUImage(seedImage)

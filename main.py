@@ -169,6 +169,7 @@ def onMousePress(app, mouseX, mouseY):
             app.gravityLocSelect = True
             app.gravityLoc = (mouseX, mouseY)
             app.copiedTarget.x, app.copiedTarget.y = mouseX, mouseY
+            
     # autoplay
     if distance(mouseX, mouseY, 829, 37) <= 25:
         if app.autoplayCount%2 == 0:

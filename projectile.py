@@ -34,7 +34,6 @@ class Projectile:
         
         # change direction
         else:
-            # self.curveTowardsCenter(cx, cy, distanceToGavityLoc)
             dx = cx - self.x
             dy = cy - self.y
             self.vx = self.speed * (dx/distanceToGavityLoc)
@@ -87,7 +86,7 @@ class icePeaShot(Projectile):
 
 class melonPult(Projectile):
     def __init__(self, startX, startY, targetX, targetY, travelTime=2.0):
-        super().__init__(startX, startY, speed = 0, damage = 20)
+        super().__init__(startX, startY, speed = 0, damage = 30)
 
         # citation: https://plantsvszombies.fandom.com/wiki/Melon-pult/Gallery
         self.imagePath = 'images/melonProjectile.png'

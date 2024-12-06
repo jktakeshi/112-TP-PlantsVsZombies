@@ -116,15 +116,3 @@ class bucketHeadZombie(Zombie):
 
         self.imagePath = self.normalImage
         self.image = self.imageDraw()
-
-class poleVaultingZombie(Zombie):
-    def __init__(self, x,  y):
-        super().__init__(x, y, health = 150, speed = 0.6, damage = 10)
-        self.lowHealth = self.health/3
-
-        # citation: https://plantsvszombies.fandom.com/wiki/Gallery_of_zombies
-        self.normalImage = 'images/poleVaultingZombie.png'
-        self.lowHealthImage = 'images/poleVaultingNoPole.png'
-
-        self.imagePath = self.normalImage
-        self.image = self.imageDraw()
